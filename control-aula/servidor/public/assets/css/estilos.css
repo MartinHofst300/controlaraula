@@ -1,0 +1,686 @@
+/* ==========================================================================
+   ESTILOS GENERALES: Control de Aula
+   Diseño minimalista, futurista y móvil-primero (Dark Warm Theme)
+   ========================================================================== */
+
+:root {
+    /* Paleta principal requerida */
+    --bg-base: #1c1818;
+    --bg-surface: #262020;
+    --bg-card: rgba(38, 32, 32, 0.85);
+    --bg-card-hover: rgba(48, 40, 40, 0.9);
+    --border-subtle: rgba(244, 240, 230, 0.08);
+    --border-highlight: rgba(137, 124, 55, 0.35);
+
+    --text-primary: #f4f0e6;
+    --text-secondary: #b8afa0;
+    --text-muted: #857c6e;
+    --text-gold: #cdbf6a;
+
+    --color-primary: #897c37;
+    --color-primary-hover: #9d8f40;
+    --color-primary-glow: rgba(137, 124, 55, 0.25);
+    --color-primary-bg: rgba(137, 124, 55, 0.15);
+
+    /* Estados de conectividad y alertas */
+    --color-success: #10b981;
+    --color-success-bg: rgba(16, 185, 129, 0.12);
+    --color-success-glow: rgba(16, 185, 129, 0.3);
+
+    --color-danger: #ef4444;
+    --color-danger-bg: rgba(239, 68, 68, 0.12);
+    --color-danger-glow: rgba(239, 68, 68, 0.25);
+
+    --color-warning: #f59e0b;
+    --color-warning-bg: rgba(245, 158, 11, 0.12);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+
+    --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
+    --shadow-glow: 0 0 20px rgba(137, 124, 55, 0.2);
+
+    --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* --------------------------------------------------------------------------
+   LOGIN ESPECÍFICO
+   -------------------------------------------------------------------------- */
+.login-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 20%, rgba(137, 124, 55, 0.15), transparent 70%), var(--bg-base);
+    padding: 20px;
+}
+
+.login-wrapper {
+    width: 100%;
+    max-width: 420px;
+}
+
+.login-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 32px 28px;
+    box-shadow: var(--shadow-card);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.login-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary-bg);
+    border: 1px solid var(--border-highlight);
+    border-radius: var(--radius-md);
+    color: var(--text-gold);
+}
+
+.login-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+}
+
+.login-header p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.login-footer {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   LAYOUT PRINCIPAL DEL PANEL
+   -------------------------------------------------------------------------- */
+.panel-contenedor {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+}
+
+.cabecera-principal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.marca-titulo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.marca-icono {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary-bg);
+    border: 1px solid var(--border-highlight);
+    border-radius: var(--radius-md);
+    color: var(--text-gold);
+}
+
+.marca-info h1 {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.marca-info span {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.cabecera-acciones {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Indicador ESP32 Online / Offline */
+.badge-conexion {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    background: rgba(244, 240, 230, 0.05);
+    border: 1px solid var(--border-subtle);
+}
+
+.badge-conexion.online {
+    background: var(--color-success-bg);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: var(--color-success);
+}
+
+.badge-conexion.offline {
+    background: var(--color-danger-bg);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--color-danger);
+}
+
+.pulso-punto {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: currentColor;
+    position: relative;
+}
+
+.badge-conexion.online .pulso-punto::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 50%;
+    background-color: var(--color-success);
+    opacity: 0.75;
+    animation: pulsoAnim 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes pulsoAnim {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(2.8); opacity: 0; }
+}
+
+/* --------------------------------------------------------------------------
+   GRILLA DE ACCIONES PRINCIPALES (LUCES Y AIRE)
+   -------------------------------------------------------------------------- */
+.grilla-controles {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+@media (min-width: 640px) {
+    .grilla-controles {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+}
+
+.tarjeta-control {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.tarjeta-control:hover {
+    border-color: var(--border-highlight);
+}
+
+.control-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.control-icono-titulo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.icono-dispositivo {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(244, 240, 230, 0.05);
+    color: var(--text-primary);
+}
+
+.icono-dispositivo.luces-on {
+    background: var(--color-warning-bg);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+}
+
+.icono-dispositivo.aire-on,
+.icono-dispositivo.proyector-on {
+    background: var(--color-primary-bg);
+    color: var(--text-gold);
+    border: 1px solid var(--border-highlight);
+    box-shadow: 0 0 15px var(--color-primary-glow);
+}
+
+.control-textos h2 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.control-textos p {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.estado-pastilla {
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.estado-pastilla.on {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.estado-pastilla.off {
+    background: rgba(244, 240, 230, 0.05);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+}
+
+.control-botones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   BARRA DE TELEMETRÍA (ESTADÍSTICAS DEL ESP32)
+   -------------------------------------------------------------------------- */
+.barra-telemetria {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+    .barra-telemetria {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+.telemetria-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.telemetria-item .etiqueta {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.telemetria-item .valor {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+/* --------------------------------------------------------------------------
+   PESTAÑAS Y SECCIONES
+   -------------------------------------------------------------------------- */
+.seccion-tabs {
+    margin-top: 24px;
+}
+
+.tabs-navegacion {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(244, 240, 230, 0.04);
+}
+
+.tab-btn.activo {
+    color: var(--text-gold);
+    background: var(--color-primary-bg);
+    border: 1px solid var(--border-highlight);
+}
+
+.tab-contenido {
+    display: none;
+}
+
+.tab-contenido.activo {
+    display: block;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --------------------------------------------------------------------------
+   TABLAS Y FORMULARIOS
+   -------------------------------------------------------------------------- */
+.tarjeta-seccion {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: var(--shadow-card);
+}
+
+.seccion-encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.seccion-encabezado h3 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.tabla-contenedor {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+th {
+    background: rgba(244, 240, 230, 0.02);
+    color: var(--text-secondary);
+    font-weight: 500;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(244, 240, 230, 0.04);
+    color: var(--text-primary);
+}
+
+tr:hover td {
+    background: rgba(244, 240, 230, 0.02);
+}
+
+.codigo-tag {
+    font-family: var(--font-mono);
+    background: rgba(244, 240, 230, 0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-gold);
+}
+
+/* Formularios */
+.formulario-grilla {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 16px;
+}
+
+@media (min-width: 640px) {
+    .formulario-grilla {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .col-span-2 { grid-column: span 2; }
+    .col-span-4 { grid-column: span 4; }
+}
+
+.campo-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.campo-grupo label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+input, select, textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-glow);
+}
+
+/* --------------------------------------------------------------------------
+   BOTONES
+   -------------------------------------------------------------------------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    user-select: none;
+}
+
+.btn-grande {
+    padding: 16px 20px;
+    font-size: 15px;
+    border-radius: var(--radius-md);
+}
+
+.btn-bloque {
+    width: 100%;
+}
+
+/* Botón primario: fondo #897c37 con texto en negrita y al menos 14px por contraste */
+.btn-primario {
+    background: var(--color-primary);
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 14px;
+}
+.btn-primario:hover {
+    background: var(--color-primary-hover);
+    box-shadow: 0 0 16px var(--color-primary-glow);
+}
+
+.btn-exito {
+    background: var(--color-success);
+    color: #ffffff;
+    font-weight: 700;
+}
+.btn-exito:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 0 16px var(--color-success-glow);
+}
+
+.btn-peligro {
+    background: var(--color-danger);
+    color: #ffffff;
+    font-weight: 700;
+}
+.btn-peligro:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 0 16px var(--color-danger-glow);
+}
+
+.btn-secundario {
+    background: rgba(244, 240, 230, 0.06);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+}
+.btn-secundario:hover {
+    background: rgba(244, 240, 230, 0.12);
+}
+
+.btn-pequeno {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.8);
+}
+
+/* --------------------------------------------------------------------------
+   ALERTAS Y FEEDBACK
+   -------------------------------------------------------------------------- */
+.alerta {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alerta-error {
+    background: var(--color-danger-bg);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+.alerta-exito {
+    background: var(--color-success-bg);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #86efac;
+}
+
+/* --------------------------------------------------------------------------
+   SIMULADOR ESP32 (VISTA DE PRUEBAS)
+   -------------------------------------------------------------------------- */
+.simulador-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+@media (min-width: 768px) {
+    .simulador-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.consola-log {
+    background: #141010;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-gold);
+    height: 260px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
