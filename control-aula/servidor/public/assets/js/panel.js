@@ -1,11 +1,17 @@
 /**
  * LÓGICA DEL PANEL WEB (VANILLA JAVASCRIPT)
  * Sincronización en tiempo real cada 2 segundos sin dependencias externas.
- * Soporte multidispositivo: Luces, Aire acondicionado y Proyector.
+ * Soporte de roles (Admin y Profesor), Gestión de Usuarios y Personalización Visual.
  */
 
 (function () {
     'use strict';
+
+    // Metadatos de sesión inyectados en el DOM
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const userRole = document.querySelector('meta[name="user-role"]')?.getAttribute('content') || 'profesor';
+    const currentUserId = parseInt(document.querySelector('meta[name="user-id"]')?.getAttribute('content') || '0', 10);
+    const esAdmin = (userRole === 'admin');
 
     // Elementos del DOM - Conexión
     const badgeConexion = document.getElementById('badgeConexion');
@@ -31,18 +37,29 @@
     const btnProyectorOff = document.getElementById('btnProyectorOff');
     const colaProyectorInfo = document.getElementById('colaProyectorInfo');
 
-    // Telemetría
+    // Telemetría (presente solo en vista Admin)
     const telIp = document.getElementById('telIp');
     const telRssi = document.getElementById('telRssi');
     const telUptime = document.getElementById('telUptime');
     const telFw = document.getElementById('telFw');
     const telContacto = document.getElementById('telContacto');
 
-    // Pestañas
+    // Panel Admin Colapsable y Pestañas
+    const btnToggleAdminPanel = document.getElementById('btnToggleAdminPanel');
+    const contenedorAdminTecnico = document.getElementById('contenedorAdminTecnico');
+    const textoToggleAdmin = document.getElementById('textoToggleAdmin');
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContenidos = document.querySelectorAll('.tab-contenido');
 
-    // Tablas y Formularios
+    // Tablas y Formularios Administrativos
+    const tablaUsuariosBody = document.getElementById('tablaUsuariosBody');
+    const formUsuario = document.getElementById('formUsuario');
+    const usuarioFormFeedback = document.getElementById('usuarioFormFeedback');
+    const btnLimpiarFormUsuario = document.getElementById('btnLimpiarFormUsuario');
+    const tituloFormUsuario = document.getElementById('tituloFormUsuario');
+    const textoBtnGuardarUsuario = document.getElementById('textoBtnGuardarUsuario');
+    const labelUsrPassword = document.getElementById('labelUsrPassword');
+
     const tablaCodigosBody = document.getElementById('tablaCodigosBody');
     const tablaCapturasBody = document.getElementById('tablaCapturasBody');
     const tablaLogBody = document.getElementById('tablaLogBody');
@@ -51,13 +68,127 @@
     const btnLimpiarFormCodigo = document.getElementById('btnLimpiarFormCodigo');
     const capturaAsignarFeedback = document.getElementById('capturaAsignarFeedback');
 
-    // Token CSRF inyectado en el DOM
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    // Modal de Configuración de Apariencia y Accesibilidad
+    const modalConfigApariencia = document.getElementById('modalConfigApariencia');
+    const btnAbrirConfig = document.getElementById('btnAbrirConfig');
+    const btnCerrarConfig = document.getElementById('btnCerrarConfig');
+    const btnCerrarConfigFooter = document.getElementById('btnCerrarConfigFooter');
+    const btnResetApariencia = document.getElementById('btnResetApariencia');
 
     let actualizacionEnCurso = false;
 
     // -------------------------------------------------------------------------
-    // FORMATEADORES DE DATOS
+    // 1. PREFERENCIAS DE APARIENCIA Y ACCESIBILIDAD (LOCALSTORAGE)
+    // -------------------------------------------------------------------------
+    const PREFS_KEY = 'control_aula_prefs';
+    const PREFS_DEFAULT = {
+        tema: 'oscuro',
+        acento: 'dorado',
+        escala: 'normal'
+    };
+
+    function obtenerPreferencias() {
+        try {
+            const guardado = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+            return {
+                tema: ['oscuro', 'claro'].includes(guardado.tema) ? guardado.tema : PREFS_DEFAULT.tema,
+                acento: ['dorado', 'azul', 'esmeralda', 'violeta'].includes(guardado.acento) ? guardado.acento : PREFS_DEFAULT.acento,
+                escala: ['pequeno', 'normal', 'grande', 'extragrande'].includes(guardado.escala) ? guardado.escala : PREFS_DEFAULT.escala
+            };
+        } catch (e) {
+            return { ...PREFS_DEFAULT };
+        }
+    }
+
+    function aplicarPreferencias(prefs) {
+        const root = document.documentElement;
+        root.setAttribute('data-theme', prefs.tema);
+        root.setAttribute('data-accent', prefs.acento);
+        root.setAttribute('data-scale', prefs.escala);
+
+        try {
+            localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+        } catch (e) {}
+
+        // Actualizar estado visual de los botones del modal
+        document.querySelectorAll('[data-pref-tema]').forEach(btn => {
+            btn.classList.toggle('activo', btn.getAttribute('data-pref-tema') === prefs.tema);
+        });
+        document.querySelectorAll('[data-pref-acento]').forEach(btn => {
+            btn.classList.toggle('activo', btn.getAttribute('data-pref-acento') === prefs.acento);
+        });
+        document.querySelectorAll('[data-pref-escala]').forEach(btn => {
+            btn.classList.toggle('activo', btn.getAttribute('data-pref-escala') === prefs.escala);
+        });
+    }
+
+    // Inicializar preferencias al cargar
+    let prefsActuales = obtenerPreferencias();
+    aplicarPreferencias(prefsActuales);
+
+    if (btnAbrirConfig && modalConfigApariencia) {
+        btnAbrirConfig.addEventListener('click', () => {
+            modalConfigApariencia.classList.add('activo');
+        });
+    }
+
+    function cerrarModalConfig() {
+        if (modalConfigApariencia) {
+            modalConfigApariencia.classList.remove('activo');
+        }
+    }
+
+    if (btnCerrarConfig) btnCerrarConfig.addEventListener('click', cerrarModalConfig);
+    if (btnCerrarConfigFooter) btnCerrarConfigFooter.addEventListener('click', cerrarModalConfig);
+    if (modalConfigApariencia) {
+        modalConfigApariencia.addEventListener('click', (e) => {
+            if (e.target === modalConfigApariencia) cerrarModalConfig();
+        });
+    }
+
+    document.querySelectorAll('[data-pref-tema]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            prefsActuales.tema = btn.getAttribute('data-pref-tema');
+            aplicarPreferencias(prefsActuales);
+        });
+    });
+
+    document.querySelectorAll('[data-pref-acento]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            prefsActuales.acento = btn.getAttribute('data-pref-acento');
+            aplicarPreferencias(prefsActuales);
+        });
+    });
+
+    document.querySelectorAll('[data-pref-escala]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            prefsActuales.escala = btn.getAttribute('data-pref-escala');
+            aplicarPreferencias(prefsActuales);
+        });
+    });
+
+    if (btnResetApariencia) {
+        btnResetApariencia.addEventListener('click', () => {
+            prefsActuales = { ...PREFS_DEFAULT };
+            aplicarPreferencias(prefsActuales);
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. SECCIÓN COLAPSABLE DE ADMINISTRACIÓN
+    // -------------------------------------------------------------------------
+    if (btnToggleAdminPanel && contenedorAdminTecnico) {
+        btnToggleAdminPanel.addEventListener('click', () => {
+            const colapsado = contenedorAdminTecnico.classList.toggle('colapsado');
+            btnToggleAdminPanel.setAttribute('aria-expanded', colapsado ? 'false' : 'true');
+            if (textoToggleAdmin) {
+                textoToggleAdmin.textContent = colapsado ? 'Mostrar herramientas' : 'Ocultar herramientas';
+            }
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. FORMATEADORES DE DATOS
     // -------------------------------------------------------------------------
     function formatearUptime(segundos) {
         if (!segundos || segundos < 0) return '0s';
@@ -82,8 +213,15 @@
         return f.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
+    function escapeHtml(texto) {
+        if (!texto) return '';
+        const div = document.createElement('div');
+        div.textContent = texto;
+        return div.innerHTML;
+    }
+
     // -------------------------------------------------------------------------
-    // ACTUALIZACIÓN DE ESTADO (POLLING CADA 2 SEGUNDOS)
+    // 4. ACTUALIZACIÓN DE ESTADO DEL AULA (POLLING CADA 2 SEGUNDOS)
     // -------------------------------------------------------------------------
     async function consultarEstado() {
         if (actualizacionEnCurso) return;
@@ -115,79 +253,79 @@
     }
 
     function actualizarIndicadorConexion(online, segundos) {
+        if (!badgeConexion || !textoConexion) return;
         if (online) {
             badgeConexion.className = 'badge-conexion online';
-            textoConexion.textContent = 'ESP32 ONLINE';
-            telContacto.textContent = segundos !== null ? `hace ${segundos}s` : 'activo';
+            textoConexion.textContent = 'AULA ONLINE';
+            if (telContacto) telContacto.textContent = segundos !== null ? `hace ${segundos}s` : 'activo';
         } else {
             badgeConexion.className = 'badge-conexion offline';
-            textoConexion.textContent = 'ESP32 OFFLINE';
-            telContacto.textContent = segundos !== null ? `hace ${segundos}s` : 'sin señal';
+            textoConexion.textContent = 'AULA OFFLINE';
+            if (telContacto) telContacto.textContent = segundos !== null ? `hace ${segundos}s` : 'sin señal';
         }
     }
 
     function renderizarEstado(data) {
         actualizarIndicadorConexion(data.esp32_online, data.segundos_desde_contacto);
 
-        // Telemetría
-        telIp.textContent = data.ip || '--';
-        telRssi.textContent = formatearRssi(data.rssi);
-        telUptime.textContent = formatearUptime(data.uptime);
-        telFw.textContent = data.version_fw ? `v${data.version_fw}` : '--';
+        // Telemetría (solo si existe en el DOM para Admin)
+        if (telIp) telIp.textContent = data.ip || '--';
+        if (telRssi) telRssi.textContent = formatearRssi(data.rssi);
+        if (telUptime) telUptime.textContent = formatearUptime(data.uptime);
+        if (telFw) telFw.textContent = data.version_fw ? `v${data.version_fw}` : '--';
 
         // 1. Estado de Luces
         const lucesEncendidas = data.luces_reales === 1;
-        pastillaLuces.className = `estado-pastilla ${lucesEncendidas ? 'on' : 'off'}`;
-        pastillaLuces.textContent = lucesEncendidas ? 'ENCENDIDAS' : 'APAGADAS';
-
-        if (lucesEncendidas) {
-            iconoLuces.classList.add('luces-on');
-        } else {
-            iconoLuces.classList.remove('luces-on');
+        if (pastillaLuces) {
+            pastillaLuces.className = `estado-pastilla ${lucesEncendidas ? 'on' : 'off'}`;
+            pastillaLuces.textContent = lucesEncendidas ? 'ENCENDIDAS' : 'APAGADAS';
+        }
+        if (iconoLuces) {
+            iconoLuces.classList.toggle('luces-on', lucesEncendidas);
         }
 
         // 2. Estado del Aire Acondicionado
         const accionAire = (data.ultima_accion_aire || 'ninguna').toLowerCase();
         const aireActivo = accionAire === 'prender';
-        pastillaAire.className = `estado-pastilla ${aireActivo ? 'on' : 'off'}`;
-        pastillaAire.textContent = accionAire.toUpperCase();
-
-        if (aireActivo) {
-            iconoAire.classList.add('aire-on');
-        } else {
-            iconoAire.classList.remove('aire-on');
+        if (pastillaAire) {
+            pastillaAire.className = `estado-pastilla ${aireActivo ? 'on' : 'off'}`;
+            pastillaAire.textContent = accionAire.toUpperCase();
+        }
+        if (iconoAire) {
+            iconoAire.classList.toggle('aire-on', aireActivo);
         }
 
         // 3. Estado del Proyector
         const accionProyector = (data.ultima_accion_proyector || 'ninguna').toLowerCase();
         const proyectorActivo = accionProyector === 'prender';
-        pastillaProyector.className = `estado-pastilla ${proyectorActivo ? 'on' : 'off'}`;
-        pastillaProyector.textContent = accionProyector.toUpperCase();
-
-        if (proyectorActivo) {
-            iconoProyector.classList.add('proyector-on');
-        } else {
-            iconoProyector.classList.remove('proyector-on');
+        if (pastillaProyector) {
+            pastillaProyector.className = `estado-pastilla ${proyectorActivo ? 'on' : 'off'}`;
+            pastillaProyector.textContent = accionProyector.toUpperCase();
+        }
+        if (iconoProyector) {
+            iconoProyector.classList.toggle('proyector-on', proyectorActivo);
         }
 
         // Información de comandos pendientes
-        if (data.comandos_ir_pendientes > 0) {
-            colaAireInfo.style.display = 'block';
-            colaAireInfo.textContent = `(${data.comandos_ir_pendientes} en cola...)`;
-            colaProyectorInfo.style.display = 'block';
-            colaProyectorInfo.textContent = `(${data.comandos_ir_pendientes} en cola...)`;
-        } else {
-            colaAireInfo.style.display = 'none';
-            colaProyectorInfo.style.display = 'none';
+        if (colaAireInfo && colaProyectorInfo) {
+            if (data.comandos_ir_pendientes > 0) {
+                colaAireInfo.style.display = 'block';
+                colaAireInfo.textContent = `(${data.comandos_ir_pendientes} en cola...)`;
+                colaProyectorInfo.style.display = 'block';
+                colaProyectorInfo.textContent = `(${data.comandos_ir_pendientes} en cola...)`;
+            } else {
+                colaAireInfo.style.display = 'none';
+                colaProyectorInfo.style.display = 'none';
+            }
         }
     }
 
     // -------------------------------------------------------------------------
-    // ACCIONES DE CONTROL
+    // 5. ACCIONES DE CONTROL DEL AULA (LUCES, AIRE, PROYECTOR)
     // -------------------------------------------------------------------------
     async function cambiarLuces(estadoDeseado) {
-        btnLucesOn.disabled = true;
-        btnLucesOff.disabled = true;
+        if (btnLucesOn) btnLucesOn.disabled = true;
+        if (btnLucesOff) btnLucesOff.disabled = true;
 
         try {
             const res = await fetch('api/luces.php', {
@@ -202,7 +340,7 @@
             const data = await res.json();
             if (data.ok) {
                 consultarEstado();
-                cargarLog();
+                if (esAdmin) cargarLog();
             } else {
                 alert(data.error || 'No se pudo cambiar el estado de las luces');
             }
@@ -210,8 +348,8 @@
             console.error('Error al cambiar luces:', err);
             alert('Error de conexión al servidor');
         } finally {
-            btnLucesOn.disabled = false;
-            btnLucesOff.disabled = false;
+            if (btnLucesOn) btnLucesOn.disabled = false;
+            if (btnLucesOff) btnLucesOff.disabled = false;
         }
     }
 
@@ -235,7 +373,7 @@
             const data = await res.json();
             if (data.ok) {
                 consultarEstado();
-                cargarLog();
+                if (esAdmin) cargarLog();
             } else {
                 alert(data.error || `No se pudo enviar el comando a ${dispositivo}`);
             }
@@ -249,9 +387,252 @@
     }
 
     // -------------------------------------------------------------------------
-    // GESTIÓN DE CÓDIGOS IR
+    // 6. GESTIÓN DE USUARIOS (EXCLUSIVO ADMIN)
+    // -------------------------------------------------------------------------
+    function resetFormularioUsuario() {
+        if (!formUsuario) return;
+        formUsuario.reset();
+        document.getElementById('usrId').value = '0';
+        if (tituloFormUsuario) {
+            tituloFormUsuario.textContent = 'Dar de alta nuevo usuario (Profesor o Administrador)';
+        }
+        if (textoBtnGuardarUsuario) {
+            textoBtnGuardarUsuario.textContent = 'Crear Usuario';
+        }
+        if (labelUsrPassword) {
+            labelUsrPassword.textContent = 'Contraseña (obligatoria)';
+        }
+        const inputPass = document.getElementById('usrPassword');
+        if (inputPass) {
+            inputPass.required = true;
+            inputPass.placeholder = 'Mínimo 4 caracteres';
+        }
+    }
+
+    async function cargarUsuarios() {
+        if (!esAdmin || !tablaUsuariosBody) return;
+
+        try {
+            const res = await fetch('api/usuarios.php');
+            const data = await res.json();
+
+            if (data.ok && Array.isArray(data.usuarios)) {
+                tablaUsuariosBody.innerHTML = '';
+                data.usuarios.forEach(u => {
+                    const tr = document.createElement('tr');
+                    const esMiUsuario = (u.id === currentUserId);
+                    const rolBadge = u.rol === 'admin'
+                        ? '<span class="rol-tag">ADMIN</span>'
+                        : '<span class="estado-pastilla off">PROFESOR</span>';
+                    const estadoBadge = u.activo === 1
+                        ? '<span class="estado-pastilla on">ACTIVO</span>'
+                        : '<span class="estado-pastilla off">INACTIVO</span>';
+
+                    let botonesAccion = `
+                        <button type="button" class="btn btn-secundario btn-pequeno btn-editar-usuario"
+                            data-id="${u.id}"
+                            data-usuario="${escapeHtml(u.usuario)}"
+                            data-nombre="${escapeHtml(u.nombre_completo)}"
+                            data-rol="${escapeHtml(u.rol)}"
+                            data-activo="${u.activo}">
+                            Editar
+                        </button>
+                    `;
+
+                    if (!esMiUsuario) {
+                        botonesAccion += `
+                            <button type="button" class="btn btn-secundario btn-pequeno btn-toggle-usuario"
+                                data-id="${u.id}"
+                                data-usuario="${escapeHtml(u.usuario)}"
+                                title="${u.activo === 1 ? 'Desactivar acceso' : 'Reactivar acceso'}">
+                                ${u.activo === 1 ? 'Desactivar' : 'Activar'}
+                            </button>
+                            <button type="button" class="btn btn-peligro btn-pequeno btn-eliminar-usuario"
+                                data-id="${u.id}"
+                                data-usuario="${escapeHtml(u.usuario)}">
+                                Eliminar
+                            </button>
+                        `;
+                    } else {
+                        botonesAccion += ` <span style="font-size:11px; color:var(--text-muted); margin-left:6px;">(Sesión actual)</span>`;
+                    }
+
+                    tr.innerHTML = `
+                        <td><strong>${escapeHtml(u.usuario)}</strong></td>
+                        <td>${escapeHtml(u.nombre_completo)}</td>
+                        <td>${rolBadge}</td>
+                        <td>${estadoBadge}</td>
+                        <td style="white-space:nowrap;">${botonesAccion}</td>
+                    `;
+                    tablaUsuariosBody.appendChild(tr);
+                });
+
+                // Listeners de Editar usuario
+                document.querySelectorAll('.btn-editar-usuario').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.getElementById('usrId').value = btn.dataset.id;
+                        document.getElementById('usrUsuario').value = btn.dataset.usuario;
+                        document.getElementById('usrNombre').value = btn.dataset.nombre;
+                        document.getElementById('usrRol').value = btn.dataset.rol;
+                        const inputPass = document.getElementById('usrPassword');
+                        if (inputPass) {
+                            inputPass.value = '';
+                            inputPass.required = false;
+                            inputPass.placeholder = 'Dejar en blanco para mantener la actual';
+                        }
+                        if (tituloFormUsuario) {
+                            tituloFormUsuario.textContent = `Editando usuario: ${btn.dataset.usuario}`;
+                        }
+                        if (textoBtnGuardarUsuario) {
+                            textoBtnGuardarUsuario.textContent = 'Guardar Cambios';
+                        }
+                        if (labelUsrPassword) {
+                            labelUsrPassword.textContent = 'Nueva Contraseña (opcional)';
+                        }
+                        document.getElementById('usrUsuario').scrollIntoView({ behavior: 'smooth' });
+                    });
+                });
+
+                // Listeners de Activar / Desactivar
+                document.querySelectorAll('.btn-toggle-usuario').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const res = await fetch('api/usuarios.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-Token': csrfToken
+                                },
+                                body: JSON.stringify({
+                                    operacion: 'toggle_activo',
+                                    id: parseInt(btn.dataset.id, 10),
+                                    csrf_token: csrfToken
+                                })
+                            });
+                            const resp = await res.json();
+                            if (resp.ok) {
+                                cargarUsuarios();
+                                cargarLog();
+                            } else {
+                                alert(resp.error || 'No se pudo cambiar el estado del usuario');
+                            }
+                        } catch (err) {
+                            alert('Error de conexión con el servidor');
+                        }
+                    });
+                });
+
+                // Listeners de Eliminar usuario
+                document.querySelectorAll('.btn-eliminar-usuario').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const nombreUsr = btn.dataset.usuario;
+                        if (!confirm(`¿Está seguro de que desea eliminar al usuario "${nombreUsr}"?`)) {
+                            return;
+                        }
+                        try {
+                            const res = await fetch('api/usuarios.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-Token': csrfToken
+                                },
+                                body: JSON.stringify({
+                                    operacion: 'eliminar',
+                                    id: parseInt(btn.dataset.id, 10),
+                                    csrf_token: csrfToken
+                                })
+                            });
+                            const resp = await res.json();
+                            if (resp.ok) {
+                                if (usuarioFormFeedback) {
+                                    usuarioFormFeedback.className = 'alerta alerta-exito';
+                                    usuarioFormFeedback.textContent = resp.mensaje;
+                                }
+                                cargarUsuarios();
+                                cargarLog();
+                            } else {
+                                alert(resp.error || 'No se pudo eliminar el usuario');
+                            }
+                        } catch (err) {
+                            alert('Error de conexión con el servidor');
+                        }
+                    });
+                });
+            }
+        } catch (e) {
+            console.error('Error al cargar usuarios:', e);
+        }
+    }
+
+    if (btnLimpiarFormUsuario) {
+        btnLimpiarFormUsuario.addEventListener('click', () => {
+            resetFormularioUsuario();
+            if (usuarioFormFeedback) {
+                usuarioFormFeedback.textContent = '';
+                usuarioFormFeedback.className = '';
+            }
+        });
+    }
+
+    if (formUsuario) {
+        formUsuario.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (usuarioFormFeedback) {
+                usuarioFormFeedback.textContent = '';
+                usuarioFormFeedback.className = '';
+            }
+
+            const id = parseInt(document.getElementById('usrId').value || '0', 10);
+            const payload = {
+                operacion: id > 0 ? 'editar' : 'crear',
+                id: id,
+                usuario: document.getElementById('usrUsuario').value.trim(),
+                nombre_completo: document.getElementById('usrNombre').value.trim(),
+                rol: document.getElementById('usrRol').value,
+                password: document.getElementById('usrPassword').value,
+                activo: 1,
+                csrf_token: csrfToken
+            };
+
+            try {
+                const res = await fetch('api/usuarios.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    if (usuarioFormFeedback) {
+                        usuarioFormFeedback.className = 'alerta alerta-exito';
+                        usuarioFormFeedback.textContent = data.mensaje || 'Usuario guardado exitosamente';
+                    }
+                    resetFormularioUsuario();
+                    cargarUsuarios();
+                    cargarLog();
+                } else {
+                    if (usuarioFormFeedback) {
+                        usuarioFormFeedback.className = 'alerta alerta-error';
+                        usuarioFormFeedback.textContent = data.error || 'Error al guardar el usuario';
+                    }
+                }
+            } catch (err) {
+                if (usuarioFormFeedback) {
+                    usuarioFormFeedback.className = 'alerta alerta-error';
+                    usuarioFormFeedback.textContent = 'Error de conexión con el servidor';
+                }
+            }
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. GESTIÓN DE CÓDIGOS IR (EXCLUSIVO ADMIN)
     // -------------------------------------------------------------------------
     async function cargarCodigos() {
+        if (!esAdmin || !tablaCodigosBody) return;
+
         try {
             const res = await fetch('api/codigos.php');
             const data = await res.json();
@@ -265,8 +646,7 @@
 
                 data.codigos.forEach(item => {
                     const tr = document.createElement('tr');
-                    
-                    // Resumen de datos de transmisión
+
                     let transmisionHTML = '';
                     if (item.codigo) {
                         transmisionHTML += `<span class="codigo-tag">${escapeHtml(item.codigo)}</span> `;
@@ -278,7 +658,6 @@
                         transmisionHTML += `<span class="codigo-tag" title="Trama RAW">[RAW]</span> `;
                     }
 
-                    // Parámetros
                     const params = `${item.bits}b | ${item.repeticiones}x | ${item.pausa_ms}ms | ${item.frecuencia_khz}kHz`;
 
                     tr.innerHTML = `
@@ -312,7 +691,6 @@
                     tablaCodigosBody.appendChild(tr);
                 });
 
-                // Listeners de Probar código
                 document.querySelectorAll('.btn-probar-codigo').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         btn.disabled = true;
@@ -321,7 +699,6 @@
                     });
                 });
 
-                // Listeners de Editar código
                 document.querySelectorAll('.btn-editar-codigo').forEach(btn => {
                     btn.addEventListener('click', () => {
                         document.getElementById('codDispositivo').value = btn.dataset.dispositivo;
@@ -401,9 +778,11 @@
     }
 
     // -------------------------------------------------------------------------
-    // CAPTURAS IR (KY-022) Y ASIGNACIÓN DIRECTA
+    // 8. CAPTURAS IR (KY-022) Y ASIGNACIÓN DIRECTA (EXCLUSIVO ADMIN)
     // -------------------------------------------------------------------------
     async function cargarCapturas() {
+        if (!esAdmin || !tablaCapturasBody) return;
+
         try {
             const res = await fetch('api/capturas.php');
             const data = await res.json();
@@ -417,7 +796,7 @@
 
                 data.capturas.forEach(item => {
                     const tr = document.createElement('tr');
-                    
+
                     let detalleDatos = '';
                     if (item.valor) detalleDatos += `<span class="codigo-tag">${escapeHtml(item.valor)}</span> `;
                     if (item.estado_hex) detalleDatos += `<span class="codigo-tag" title="${escapeHtml(item.estado_hex)}">[Estado]</span> `;
@@ -489,9 +868,11 @@
     }
 
     // -------------------------------------------------------------------------
-    // REGISTRO DE EVENTOS (LOG)
+    // 9. REGISTRO DE EVENTOS (LOG - EXCLUSIVO ADMIN)
     // -------------------------------------------------------------------------
     async function cargarLog() {
+        if (!esAdmin || !tablaLogBody) return;
+
         try {
             const res = await fetch('api/log.php');
             const data = await res.json();
@@ -520,23 +901,14 @@
     }
 
     // -------------------------------------------------------------------------
-    // NAVEGACIÓN POR PESTAÑAS
+    // 10. NAVEGACIÓN POR PESTAÑAS (PANEL ADMIN)
     // -------------------------------------------------------------------------
     function activarTab(tabId) {
         tabBtns.forEach(btn => {
-            if (btn.dataset.target === tabId) {
-                btn.classList.add('activo');
-            } else {
-                btn.classList.remove('activo');
-            }
+            btn.classList.toggle('activo', btn.dataset.target === tabId);
         });
-
         tabContenidos.forEach(seccion => {
-            if (seccion.id === tabId) {
-                seccion.classList.add('activo');
-            } else {
-                seccion.classList.remove('activo');
-            }
+            seccion.classList.toggle('activo', seccion.id === tabId);
         });
     }
 
@@ -545,21 +917,15 @@
             const destino = btn.dataset.target;
             activarTab(destino);
 
+            if (destino === 'tab-usuarios') cargarUsuarios();
             if (destino === 'tab-codigos') cargarCodigos();
             if (destino === 'tab-capturas') cargarCapturas();
             if (destino === 'tab-log') cargarLog();
         });
     });
 
-    function escapeHtml(texto) {
-        if (!texto) return '';
-        const div = document.createElement('div');
-        div.textContent = texto;
-        return div.innerHTML;
-    }
-
     // -------------------------------------------------------------------------
-    // ASIGNACIÓN DE EVENTOS A BOTONES PRINCIPALES
+    // 11. ASIGNACIÓN DE EVENTOS A BOTONES PRINCIPALES E INICIALIZACIÓN
     // -------------------------------------------------------------------------
     if (btnLucesOn) btnLucesOn.addEventListener('click', () => cambiarLuces(1));
     if (btnLucesOff) btnLucesOff.addEventListener('click', () => cambiarLuces(0));
@@ -570,17 +936,23 @@
     if (btnProyectorOn) btnProyectorOn.addEventListener('click', () => enviarComandoDispositivo('proyector', 'prender'));
     if (btnProyectorOff) btnProyectorOff.addEventListener('click', () => enviarComandoDispositivo('proyector', 'apagar'));
 
-    // Iniciar polling y cargas iniciales
+    // Iniciar polling del estado del aula (disponible para Profesor y Admin)
     consultarEstado();
-    cargarCodigos();
-    cargarCapturas();
-    cargarLog();
-
     setInterval(consultarEstado, 2000);
-    setInterval(() => {
-        const tabActiva = document.querySelector('.tab-contenido.activo');
-        if (tabActiva && tabActiva.id === 'tab-capturas') cargarCapturas();
-        if (tabActiva && tabActiva.id === 'tab-log') cargarLog();
-    }, 6000);
+
+    // Si es Admin, inicializar módulos administrativos
+    if (esAdmin) {
+        resetFormularioUsuario();
+        cargarUsuarios();
+        cargarCodigos();
+        cargarCapturas();
+        cargarLog();
+
+        setInterval(() => {
+            const tabActiva = document.querySelector('.tab-contenido.activo');
+            if (tabActiva && tabActiva.id === 'tab-capturas') cargarCapturas();
+            if (tabActiva && tabActiva.id === 'tab-log') cargarLog();
+        }, 6000);
+    }
 
 })();

@@ -1,10 +1,12 @@
 <?php
 /**
- * Lógica de autenticación, autorización, tokens CSRF y control de fuerza bruta
+ * Lógica de autenticación, autorización por roles (admin / profesor),
+ * tokens CSRF y control de fuerza bruta
  */
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/funciones.php';
 
 /**
  * Obtiene la dirección IP real del cliente considerando posibles proxies reversos
@@ -20,6 +22,57 @@ function obtenerIPCliente() {
         }
     }
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
+/**
+ * Autentica credenciales de usuario contra la tabla `usuarios` (con fallback a config.php)
+ */
+function autenticarCredencialesUsuario($pdo, $usuario, $password) {
+    try {
+        $stmt = $pdo->prepare('SELECT id, usuario, password_hash, nombre_completo, rol, activo FROM usuarios WHERE usuario = :usuario LIMIT 1');
+        $stmt->execute([':usuario' => $usuario]);
+        $fila = $stmt->fetch();
+
+        if ($fila) {
+            if ((int) $fila['activo'] !== 1) {
+                return [
+                    'exito' => false,
+                    'error' => 'Esta cuenta de usuario se encuentra desactivada. Contacte al administrador.'
+                ];
+            }
+            if (password_verify($password, $fila['password_hash'])) {
+                return [
+                    'exito' => true,
+                    'id' => (int) $fila['id'],
+                    'usuario' => $fila['usuario'],
+                    'nombre_completo' => $fila['nombre_completo'],
+                    'rol' => $fila['rol']
+                ];
+            }
+            return [
+                'exito' => false,
+                'error' => 'Credenciales incorrectas. Verifique usuario y contraseña.'
+            ];
+        }
+    } catch (Exception $e) {
+        error_log('Aviso al consultar tabla usuarios: ' . $e->getMessage());
+    }
+
+    // Fallback de compatibilidad con constantes de config.php
+    if ($usuario === PANEL_USUARIO && password_verify($password, PANEL_PASSWORD_HASH)) {
+        return [
+            'exito' => true,
+            'id' => 1,
+            'usuario' => PANEL_USUARIO,
+            'nombre_completo' => 'Administrador del Sistema',
+            'rol' => 'admin'
+        ];
+    }
+
+    return [
+        'exito' => false,
+        'error' => 'Credenciales incorrectas. Verifique usuario y contraseña.'
+    ];
 }
 
 /**
@@ -87,7 +140,10 @@ function autenticarPanelOApp() {
             return [
                 'autenticado' => true,
                 'origen' => 'app',
-                'usuario' => 'app_movil'
+                'usuario_id' => 0,
+                'usuario' => 'app_movil',
+                'nombre_completo' => 'App Móvil',
+                'rol' => 'admin'
             ];
         } else {
             http_response_code(401);
@@ -103,7 +159,10 @@ function autenticarPanelOApp() {
         return [
             'autenticado' => true,
             'origen' => 'panel',
-            'usuario' => $_SESSION['usuario'] ?? 'admin'
+            'usuario_id' => (int) ($_SESSION['usuario_id'] ?? 1),
+            'usuario' => $_SESSION['usuario'] ?? 'admin',
+            'nombre_completo' => $_SESSION['nombre_completo'] ?? ($_SESSION['usuario'] ?? 'Usuario'),
+            'rol' => $_SESSION['rol'] ?? 'admin'
         ];
     }
 
@@ -112,6 +171,23 @@ function autenticarPanelOApp() {
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['ok' => false, 'error' => 'Acceso no autorizado']);
     exit;
+}
+
+/**
+ * Verifica que el usuario autenticado posea rol 'admin'.
+ * Bloquea con HTTP 403 en caso contrario.
+ */
+function requerirRolAdmin($authInfo) {
+    if (($authInfo['rol'] ?? '') !== 'admin') {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => false,
+            'error' => 'Acceso denegado: esta operacion requiere permisos de administrador'
+        ]);
+        exit;
+    }
+    return true;
 }
 
 /**
@@ -142,12 +218,21 @@ function validarTokenCSRFSiEsPanel($authInfo) {
     } elseif (isset($_POST['csrf_token'])) {
         $tokenRecibido = trim($_POST['csrf_token']);
     } else {
-        // Intentar leer de JSON body si existe
-        $raw = file_get_contents('php://input');
-        if (!empty($raw)) {
-            $data = json_decode($raw, true);
-            if (is_array($data) && isset($data['csrf_token'])) {
-                $tokenRecibido = trim($data['csrf_token']);
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        foreach ($headers as $nombre => $valor) {
+            if (strcasecmp($nombre, 'X-CSRF-Token') === 0) {
+                $tokenRecibido = trim($valor);
+                break;
+            }
+        }
+        if (empty($tokenRecibido)) {
+            // Intentar leer de JSON body si existe
+            $raw = file_get_contents('php://input');
+            if (!empty($raw)) {
+                $data = json_decode($raw, true);
+                if (is_array($data) && isset($data['csrf_token'])) {
+                    $tokenRecibido = trim($data['csrf_token']);
+                }
             }
         }
     }

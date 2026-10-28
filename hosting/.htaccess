@@ -1,0 +1,46 @@
+# ====================================================================
+# Configuración Apache raíz para el despliegue del servidor
+# Protege directorios privados y reenvía tráfico a public/
+# Compatible tanto en la raíz del dominio (VPS) como en subcarpetas (XAMPP)
+# ====================================================================
+
+Options -Indexes
+DirectorySlash Off
+ServerSignature Off
+
+# Bloquear acceso a archivos y carpetas sensibles
+<FilesMatch "^\.(htaccess|htpasswd|env|git)|.*\.(sql|ini|log|sh)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Forzar HTTPS (descomentar si el certificado SSL está activo en el hosting)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Proteger carpetas internas
+    RewriteRule ^app/ - [F,L]
+    RewriteRule ^sql/ - [F,L]
+
+    # Si la petición ya apunta a public/, no volver a reescribir (evita loops en subcarpetas)
+    RewriteRule ^public/ - [L]
+
+    # Resolver /api/capturas directo al script para no colisionar con el subdirectorio public/api/capturas/
+    RewriteRule ^api/capturas/?$ public/api/capturas.php [L,QSA]
+
+    # Si se pide la raíz del directorio, servir public/index.php
+    RewriteRule ^$ public/index.php [L]
+
+    # Reenviar cualquier otra petición a public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>

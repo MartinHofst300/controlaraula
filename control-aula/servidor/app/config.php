@@ -17,8 +17,8 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
 // -----------------------------------------------------------------------------
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'control_aula');
-define('DB_USER', 'usuario_bd');
-define('DB_PASS', 'password_bd');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 define('DB_PORT', 3306);
 define('DB_CHARSET', 'utf8mb4');
 
@@ -40,7 +40,7 @@ define('PANEL_USUARIO', 'admin');
 // Hash de la contraseña del panel (generado con password_hash()).
 // Para generar un hash nuevo, ejecutar en PHP: echo password_hash('TuContraseña', PASSWORD_DEFAULT);
 // El hash predeterminado a continuación corresponde a la contraseña provisional: admin123
-define('PANEL_PASSWORD_HASH', '$2y$10$QOekj1iHqXjBmsn8f9QOpejO6H8uF73JcO.p3Nn8BwV.c25jM3l6.');
+define('PANEL_PASSWORD_HASH', '$2y$10$2jKPHsivzyJCV8ckLvSi3eymLTnwp9SlsPVGPaHELdJjNVmCYLxTS');
 
 // -----------------------------------------------------------------------------
 // 4. Parámetros de comportamiento y tiempos

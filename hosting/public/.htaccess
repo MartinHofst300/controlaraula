@@ -1,0 +1,42 @@
+# ====================================================================
+# Configuración Apache para la carpeta public/
+# ====================================================================
+
+Options -Indexes
+DirectorySlash Off
+ServerSignature Off
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Soporte para rutas de API si se accede sin la extensión .php
+    # (Se evalúan antes del chequeo de directorios para que /api/capturas no colisione con la carpeta api/capturas/)
+    RewriteRule ^api/esp32/sincronizar/?$ api/esp32/sincronizar.php [L,QSA]
+    RewriteRule ^api/esp32/reportar/?$ api/esp32/reportar.php [L,QSA]
+    RewriteRule ^api/esp32/captura/?$ api/esp32/captura.php [L,QSA]
+    RewriteRule ^api/estado/?$ api/estado.php [L,QSA]
+    RewriteRule ^api/luces/?$ api/luces.php [L,QSA]
+    RewriteRule ^api/aire/?$ api/aire.php [L,QSA]
+    RewriteRule ^api/proyector/?$ api/proyector.php [L,QSA]
+    RewriteRule ^api/ir/?$ api/ir.php [L,QSA]
+    RewriteRule ^api/codigos/?$ api/codigos.php [L,QSA]
+    RewriteRule ^api/capturas/asignar/?$ api/capturas/asignar.php [L,QSA]
+    RewriteRule ^api/capturas/?$ api/capturas.php [L,QSA]
+    RewriteRule ^api/log/?$ api/log.php [L,QSA]
+
+    # Si el archivo o directorio solicitado existe físicamente, servirlo
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Reescribir rutas limpias a sus archivos .php correspondientes si existen
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.+?)/?$ $1.php [L,QSA]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

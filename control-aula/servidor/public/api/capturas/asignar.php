@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $auth = autenticarPanelOApp();
+requerirRolAdmin($auth);
 validarTokenCSRFSiEsPanel($auth);
 
 $datos = obtenerDatosEntrada();

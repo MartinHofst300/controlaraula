@@ -12,6 +12,8 @@ require_once __DIR__ . '/../../../app/db.php';
 require_once __DIR__ . '/../../../app/auth.php';
 require_once __DIR__ . '/../../../app/funciones.php';
 
+habilitarCORS();
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Content-Type: text/plain; charset=utf-8');

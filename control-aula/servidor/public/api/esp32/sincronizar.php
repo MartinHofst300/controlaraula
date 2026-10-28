@@ -14,6 +14,8 @@ require_once __DIR__ . '/../../../app/db.php';
 require_once __DIR__ . '/../../../app/auth.php';
 require_once __DIR__ . '/../../../app/funciones.php';
 
+habilitarCORS();
+
 // Validar método
 $metodo = $_SERVER['REQUEST_METHOD'];
 if ($metodo !== 'GET' && $metodo !== 'POST') {

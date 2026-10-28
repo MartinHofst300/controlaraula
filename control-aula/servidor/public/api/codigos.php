@@ -12,6 +12,7 @@ require_once __DIR__ . '/../../app/funciones.php';
 habilitarCORS();
 
 $auth = autenticarPanelOApp();
+requerirRolAdmin($auth);
 $pdo = obtenerConexionDB();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

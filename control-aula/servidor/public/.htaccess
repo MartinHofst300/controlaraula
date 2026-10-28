@@ -3,21 +3,14 @@
 # ====================================================================
 
 Options -Indexes
+DirectorySlash Off
 ServerSignature Off
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Si el archivo o directorio solicitado existe físicamente, servirlo
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-
-    # Reescribir rutas limpias de la API a sus archivos .php correspondientes
-    RewriteCond %{REQUEST_FILENAME}.php -f
-    RewriteRule ^(.*)$ $1.php [L,QSA]
-
     # Soporte para rutas de API si se accede sin la extensión .php
+    # (Se evalúan antes del chequeo de directorios para que /api/capturas no colisione con la carpeta api/capturas/)
     RewriteRule ^api/esp32/sincronizar/?$ api/esp32/sincronizar.php [L,QSA]
     RewriteRule ^api/esp32/reportar/?$ api/esp32/reportar.php [L,QSA]
     RewriteRule ^api/esp32/captura/?$ api/esp32/captura.php [L,QSA]
@@ -29,7 +22,17 @@ ServerSignature Off
     RewriteRule ^api/codigos/?$ api/codigos.php [L,QSA]
     RewriteRule ^api/capturas/asignar/?$ api/capturas/asignar.php [L,QSA]
     RewriteRule ^api/capturas/?$ api/capturas.php [L,QSA]
+    RewriteRule ^api/usuarios/?$ api/usuarios.php [L,QSA]
     RewriteRule ^api/log/?$ api/log.php [L,QSA]
+
+    # Si el archivo o directorio solicitado existe físicamente, servirlo
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Reescribir rutas limpias a sus archivos .php correspondientes si existen
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.+?)/?$ $1.php [L,QSA]
 </IfModule>
 
 <IfModule mod_headers.c>

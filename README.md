@@ -37,6 +37,13 @@ Sistema de control remoto para aula: gestión de luces (relé) y equipos infrarr
 └── control-aula.zip              # Archivo ZIP completo empaquetado para despliegue
 ```
 
+## Credenciales de Acceso por Defecto
+
+| Rol | Usuario | Contraseña | Permisos |
+| :--- | :--- | :--- | :--- |
+| **Administrador** | `admin` | `admin123` | Control total del aula, gestión de usuarios, códigos IR, capturas KY-022, logs y simulador ESP32 |
+| **Profesor** | `profesor` | `profe123` | Control directo del aula (iluminación, aire acondicionado y proyector) y configuración visual |
+
 ## Puesta en Marcha
 
 Consultar el archivo [control-aula/INSTALL.txt](control-aula/INSTALL.txt) para las instrucciones detalladas de configuración de base de datos, despliegue del servidor y compilación del firmware.

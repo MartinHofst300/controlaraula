@@ -8,6 +8,7 @@
 require_once __DIR__ . '/../app/config.php';
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/auth.php';
+require_once __DIR__ . '/../app/funciones.php';
 
 iniciarSesionSegura();
 
@@ -16,16 +17,33 @@ if (empty($_SESSION['autenticado']) || $_SESSION['autenticado'] !== true) {
     exit;
 }
 
+if (($_SESSION['rol'] ?? '') !== 'admin') {
+    http_response_code(403);
+    echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Acceso restringido</title><link rel="stylesheet" href="assets/css/estilos.css"></head><body class="login-body"><div class="login-wrapper"><div class="login-card" style="text-align:center;"><h2 style="margin-bottom:10px;">Acceso Restringido</h2><p style="color:var(--text-secondary);margin-bottom:20px;">El Simulador de ESP32 está disponible únicamente para usuarios con rol Administrador.</p><a href="index.php" class="btn btn-primario">Volver al Panel del Aula</a></div></div></body></html>';
+    exit;
+}
+
 $apiKeyActual = API_KEY_ESP32;
 $csrfToken = obtenerTokenCSRF();
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="oscuro" data-accent="dorado" data-scale="normal">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1c1818">
     <title>Simulador ESP32 | Control de Aula</title>
+    <script>
+        (function() {
+            try {
+                var prefs = JSON.parse(localStorage.getItem('control_aula_prefs') || '{}');
+                var root = document.documentElement;
+                if (prefs.tema) root.setAttribute('data-theme', prefs.tema);
+                if (prefs.acento) root.setAttribute('data-accent', prefs.acento);
+                if (prefs.escala) root.setAttribute('data-scale', prefs.escala);
+            } catch (e) {}
+        })();
+    </script>
     <link rel="stylesheet" href="assets/css/estilos.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

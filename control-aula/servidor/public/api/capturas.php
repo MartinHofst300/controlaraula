@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 $auth = autenticarPanelOApp();
+requerirRolAdmin($auth);
 $pdo = obtenerConexionDB();
 
 $limite = isset($_GET['limite']) ? min(100, max(1, (int)$_GET['limite'])) : 30;
