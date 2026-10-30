@@ -1,7 +1,7 @@
 <?php
 /**
  * GET /api/log
- * Retorna los últimos eventos registrados en el sistema.
+ * Retorna los últimos eventos registrados en el sistema (Multi-Aula).
  */
 
 require_once __DIR__ . '/../../app/config.php';
@@ -18,10 +18,31 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 $auth = autenticarPanelOApp();
 requerirRolAdmin($auth);
 $pdo = obtenerConexionDB();
+asegurarColumnasExtendidas($pdo);
 
-$limite = isset($_GET['limite']) ? min(100, max(1, (int)$_GET['limite'])) : 40;
+$limite = isset($_GET['limite']) ? min(100, max(1, (int)$_GET['limite'])) : 50;
+$filtroAula = isset($_GET['aula_id']) && $_GET['aula_id'] !== '' ? (int)$_GET['aula_id'] : null;
 
-$stmt = $pdo->prepare('SELECT id, origen, evento, detalle, creado_en FROM log_eventos ORDER BY id DESC LIMIT :limite');
+$sql = "SELECT l.id, l.origen, l.evento, l.detalle, l.aula_id, l.creado_en, a.nombre AS aula_nombre 
+        FROM log_eventos l 
+        LEFT JOIN aulas a ON l.aula_id = a.id";
+$params = [];
+
+if ($filtroAula !== null) {
+    if ($filtroAula === 0) {
+        $sql .= " WHERE (l.aula_id IS NULL OR l.aula_id = 0)";
+    } else {
+        $sql .= " WHERE l.aula_id = :aula_id";
+        $params[':aula_id'] = $filtroAula;
+    }
+}
+
+$sql .= " ORDER BY l.id DESC LIMIT :limite";
+
+$stmt = $pdo->prepare($sql);
+foreach ($params as $k => $v) {
+    $stmt->bindValue($k, $v);
+}
 $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
 $stmt->execute();
 $eventos = $stmt->fetchAll();

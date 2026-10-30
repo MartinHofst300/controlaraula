@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$estadoBloqueo['bloqueado']) {
             $_SESSION['usuario'] = $authResult['usuario'];
             $_SESSION['nombre_completo'] = $authResult['nombre_completo'];
             $_SESSION['rol'] = $authResult['rol'];
+            $_SESSION['aula_id'] = $authResult['aula_id'] ?? null;
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
             registrarEvento(
@@ -74,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$estadoBloqueo['bloqueado']) {
 $csrfToken = obtenerTokenCSRF();
 ?>
 <!DOCTYPE html>
-<html lang="es" data-theme="oscuro" data-accent="dorado" data-scale="normal">
+<html lang="es" data-theme="oscuro" data-accent="dorado" data-font="sans" data-density="comoda" data-contrast="normal" data-motion="normal">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -85,9 +86,25 @@ $csrfToken = obtenerTokenCSRF();
             try {
                 var prefs = JSON.parse(localStorage.getItem('control_aula_prefs') || '{}');
                 var root = document.documentElement;
-                if (prefs.tema) root.setAttribute('data-theme', prefs.tema);
+                var tema = prefs.tema || 'oscuro';
+                if (tema === 'auto') {
+                    tema = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'claro' : 'oscuro';
+                }
+                root.setAttribute('data-theme', tema);
                 if (prefs.acento) root.setAttribute('data-accent', prefs.acento);
-                if (prefs.escala) root.setAttribute('data-scale', prefs.escala);
+                if (prefs.fuente) root.setAttribute('data-font', prefs.fuente);
+                if (prefs.densidad) root.setAttribute('data-density', prefs.densidad);
+                if (prefs.altoContraste) root.setAttribute('data-contrast', 'alto');
+                if (prefs.reducirAnimaciones) root.setAttribute('data-motion', 'reducido');
+                if (prefs.escalaPct) {
+                    var pct = Math.max(85, Math.min(130, parseInt(prefs.escalaPct, 10) || 100));
+                    root.style.setProperty('--ui-scale', (pct / 100).toFixed(2));
+                }
+                if (prefs.acento === 'custom' && prefs.colorCustom) {
+                    root.style.setProperty('--color-primary', prefs.colorCustom);
+                    root.style.setProperty('--color-primary-hover', prefs.colorCustom);
+                    root.style.setProperty('--text-gold', prefs.colorCustom);
+                }
             } catch (e) {}
         })();
     </script>

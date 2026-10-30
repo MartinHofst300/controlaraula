@@ -25,8 +25,8 @@ define('DB_CHARSET', 'utf8mb4');
 // -----------------------------------------------------------------------------
 // 2. Claves de autenticación y tokens de seguridad
 // -----------------------------------------------------------------------------
-// Clave que envía el ESP32 en la cabecera X-API-Key
-define('API_KEY_ESP32', 'CAMBIAR_POR_CLAVE_ESP32_ALEATORIA_64BITS');
+// Clave que envía el ESP32 en la cabecera X-API-Key (coincide con Aula 1 en MySQL)
+define('API_KEY_ESP32', 'clave_secreta_esp32_aula_101_general_abc12345');
 
 // Token Bearer que usa la app móvil de los compañeros (Authorization: Bearer <token>)
 define('TOKEN_APP', 'CAMBIAR_POR_TOKEN_APP_MOVIL_SECRETO');

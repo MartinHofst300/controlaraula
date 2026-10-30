@@ -1,6 +1,6 @@
 <?php
 /**
- * Página de autenticación para el Panel de Control
+ * Página de autenticación para el Panel de Control (Roles: admin y profesor)
  */
 
 require_once __DIR__ . '/../app/config.php';
@@ -35,23 +35,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$estadoBloqueo['bloqueado']) {
         $usuario = trim($_POST['usuario'] ?? '');
         $password = $_POST['password'] ?? '';
 
-        if ($usuario === PANEL_USUARIO && password_verify($password, PANEL_PASSWORD_HASH)) {
+        $authResult = autenticarCredencialesUsuario($pdo, $usuario, $password);
+
+        if ($authResult['exito']) {
             // Login exitoso
             limpiarIntentosLogin($pdo, $ipCliente);
             session_regenerate_id(true);
             $_SESSION['autenticado'] = true;
-            $_SESSION['usuario'] = PANEL_USUARIO;
+            $_SESSION['usuario_id'] = (int) $authResult['id'];
+            $_SESSION['usuario'] = $authResult['usuario'];
+            $_SESSION['nombre_completo'] = $authResult['nombre_completo'];
+            $_SESSION['rol'] = $authResult['rol'];
+            $_SESSION['aula_id'] = $authResult['aula_id'] ?? null;
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
-            registrarEvento($pdo, 'panel', 'INICIO_SESION', "Inicio de sesion exitoso desde IP {$ipCliente}");
+            registrarEvento(
+                $pdo,
+                'panel',
+                'INICIO_SESION',
+                "Inicio de sesion exitoso de '{$authResult['usuario']}' (rol: {$authResult['rol']}) desde IP {$ipCliente}"
+            );
 
             header('Location: index.php');
             exit;
         } else {
-            // Credenciales incorrectas
+            // Credenciales incorrectas o cuenta inactiva
             registrarFalloLogin($pdo, $ipCliente);
-            registrarEvento($pdo, 'seguridad', 'FALLO_LOGIN', "Intento fallido de login con usuario '{$usuario}' desde IP {$ipCliente}");
-            $error = 'Credenciales incorrectas. Verifique usuario y contraseña.';
+            registrarEvento(
+                $pdo,
+                'seguridad',
+                'FALLO_LOGIN',
+                "Intento fallido de login con usuario '{$usuario}' desde IP {$ipCliente}"
+            );
+            $error = $authResult['error'] ?? 'Credenciales incorrectas. Verifique usuario y contraseña.';
         }
     }
 }
@@ -59,12 +75,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$estadoBloqueo['bloqueado']) {
 $csrfToken = obtenerTokenCSRF();
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="oscuro" data-accent="dorado" data-font="sans" data-density="comoda" data-contrast="normal" data-motion="normal">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1c1818">
     <title>Acceso | Control de Aula</title>
+    <script>
+        (function() {
+            try {
+                var prefs = JSON.parse(localStorage.getItem('control_aula_prefs') || '{}');
+                var root = document.documentElement;
+                var tema = prefs.tema || 'oscuro';
+                if (tema === 'auto') {
+                    tema = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'claro' : 'oscuro';
+                }
+                root.setAttribute('data-theme', tema);
+                if (prefs.acento) root.setAttribute('data-accent', prefs.acento);
+                if (prefs.fuente) root.setAttribute('data-font', prefs.fuente);
+                if (prefs.densidad) root.setAttribute('data-density', prefs.densidad);
+                if (prefs.altoContraste) root.setAttribute('data-contrast', 'alto');
+                if (prefs.reducirAnimaciones) root.setAttribute('data-motion', 'reducido');
+                if (prefs.escalaPct) {
+                    var pct = Math.max(85, Math.min(130, parseInt(prefs.escalaPct, 10) || 100));
+                    root.style.setProperty('--ui-scale', (pct / 100).toFixed(2));
+                }
+                if (prefs.acento === 'custom' && prefs.colorCustom) {
+                    root.style.setProperty('--color-primary', prefs.colorCustom);
+                    root.style.setProperty('--color-primary-hover', prefs.colorCustom);
+                    root.style.setProperty('--text-gold', prefs.colorCustom);
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="stylesheet" href="assets/css/estilos.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -82,7 +125,7 @@ $csrfToken = obtenerTokenCSRF();
                     </svg>
                 </div>
                 <h1>Control de Aula</h1>
-                <p>Servidor Central de Gestión Embebida</p>
+                <p>Gestión de Iluminación, Climatización y Proyector</p>
             </div>
 
             <?php if (!empty($error)): ?>
@@ -97,7 +140,7 @@ $csrfToken = obtenerTokenCSRF();
                 <div class="campo-grupo">
                     <label for="usuario">Usuario</label>
                     <div class="input-contenedor">
-                        <input type="text" id="usuario" name="usuario" required autocomplete="username" autofocus placeholder="admin">
+                        <input type="text" id="usuario" name="usuario" required autocomplete="username" autofocus placeholder="profesor o admin">
                     </div>
                 </div>
 
@@ -109,12 +152,12 @@ $csrfToken = obtenerTokenCSRF();
                 </div>
 
                 <button type="submit" class="btn btn-primario btn-bloque">
-                    <span>Ingresar al Sistema</span>
+                    <span>Ingresar al Aula</span>
                 </button>
             </form>
 
             <div class="login-footer">
-                <span>Acceso restringido para personal autorizado</span>
+                <span>Acceso para docentes y administradores autorizados</span>
             </div>
         </div>
     </div>

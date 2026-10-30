@@ -29,7 +29,8 @@ function obtenerIPCliente() {
  */
 function autenticarCredencialesUsuario($pdo, $usuario, $password) {
     try {
-        $stmt = $pdo->prepare('SELECT id, usuario, password_hash, nombre_completo, rol, activo FROM usuarios WHERE usuario = :usuario LIMIT 1');
+        asegurarColumnasExtendidas($pdo);
+        $stmt = $pdo->prepare('SELECT id, usuario, password_hash, nombre_completo, rol, aula_id, activo FROM usuarios WHERE usuario = :usuario LIMIT 1');
         $stmt->execute([':usuario' => $usuario]);
         $fila = $stmt->fetch();
 
@@ -46,7 +47,8 @@ function autenticarCredencialesUsuario($pdo, $usuario, $password) {
                     'id' => (int) $fila['id'],
                     'usuario' => $fila['usuario'],
                     'nombre_completo' => $fila['nombre_completo'],
-                    'rol' => $fila['rol']
+                    'rol' => $fila['rol'],
+                    'aula_id' => $fila['aula_id'] !== null ? (int)$fila['aula_id'] : null
                 ];
             }
             return [
@@ -65,7 +67,8 @@ function autenticarCredencialesUsuario($pdo, $usuario, $password) {
             'id' => 1,
             'usuario' => PANEL_USUARIO,
             'nombre_completo' => 'Administrador del Sistema',
-            'rol' => 'admin'
+            'rol' => 'admin',
+            'aula_id' => null
         ];
     }
 
@@ -76,9 +79,18 @@ function autenticarCredencialesUsuario($pdo, $usuario, $password) {
 }
 
 /**
- * Autentica solicitudes del ESP32 mediante cabecera X-API-Key
+ * Autentica solicitudes del ESP32 mediante cabecera X-API-Key o parámetro api_key.
+ * Soporta autenticación Multi-Aula:
+ * 1. Clave específica de un aula registrada en la tabla `aulas` (columna `api_key_esp32`).
+ * 2. Clave global API_KEY_ESP32 con parámetro opcional `aula_id` (por defecto aula 1).
+ * Devuelve el registro de la aula autenticada.
  */
-function autenticarESP32() {
+function autenticarESP32($pdo = null) {
+    if (!$pdo) {
+        $pdo = obtenerConexionDB();
+    }
+    asegurarColumnasExtendidas($pdo);
+
     $apiKeyRecibida = '';
 
     if (isset($_SERVER['HTTP_X_API_KEY'])) {
@@ -93,14 +105,73 @@ function autenticarESP32() {
         }
     }
 
-    if (empty($apiKeyRecibida) || !hash_equals(API_KEY_ESP32, $apiKeyRecibida)) {
+    if (empty($apiKeyRecibida)) {
+        if (!empty($_GET['api_key'])) {
+            $apiKeyRecibida = trim($_GET['api_key']);
+        } elseif (!empty($_POST['api_key'])) {
+            $apiKeyRecibida = trim($_POST['api_key']);
+        }
+    }
+
+    if (empty($apiKeyRecibida)) {
         http_response_code(401);
         header('Content-Type: text/plain; charset=utf-8');
-        echo "ERROR: No autorizado\n";
+        echo "ERROR: Clave API requerida (X-API-Key)\n";
         exit;
     }
 
-    return true;
+    // 1. Buscar si la clave corresponde a un aula específica activa
+    try {
+        $stmtAula = $pdo->prepare('SELECT * FROM aulas WHERE api_key_esp32 = :key AND activa = 1 LIMIT 1');
+        $stmtAula->execute([':key' => $apiKeyRecibida]);
+        $aula = $stmtAula->fetch(PDO::FETCH_ASSOC);
+        if ($aula) {
+            return $aula;
+        }
+    } catch (Exception $e) {
+        error_log('Aviso al buscar aula por api_key: ' . $e->getMessage());
+    }
+
+    // 2. Comprobar contra la clave global por compatibilidad
+    if (hash_equals(API_KEY_ESP32, $apiKeyRecibida)) {
+        $aulaIdSol = 1;
+        if (!empty($_GET['aula_id'])) {
+            $aulaIdSol = (int) $_GET['aula_id'];
+        } elseif (!empty($_POST['aula_id'])) {
+            $aulaIdSol = (int) $_POST['aula_id'];
+        } elseif (!empty($_SERVER['HTTP_X_AULA_ID'])) {
+            $aulaIdSol = (int) $_SERVER['HTTP_X_AULA_ID'];
+        }
+
+        try {
+            $stmtAula = $pdo->prepare('SELECT * FROM aulas WHERE id = :id AND activa = 1 LIMIT 1');
+            $stmtAula->execute([':id' => $aulaIdSol]);
+            $aula = $stmtAula->fetch(PDO::FETCH_ASSOC);
+            if ($aula) {
+                return $aula;
+            }
+            // Si no existe, devolver aula 1 por defecto
+            $stmt1 = $pdo->query('SELECT * FROM aulas WHERE id = 1 LIMIT 1');
+            $aula1 = $stmt1->fetch(PDO::FETCH_ASSOC);
+            if ($aula1) {
+                return $aula1;
+            }
+        } catch (Exception $e) {
+            error_log('Aviso al buscar aula global: ' . $e->getMessage());
+        }
+
+        return [
+            'id' => 1,
+            'nombre' => 'Aula 101 - General',
+            'api_key_esp32' => API_KEY_ESP32,
+            'activa' => 1
+        ];
+    }
+
+    http_response_code(401);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "ERROR: No autorizado (API Key invalida)\n";
+    exit;
 }
 
 /**
@@ -162,7 +233,8 @@ function autenticarPanelOApp() {
             'usuario_id' => (int) ($_SESSION['usuario_id'] ?? 1),
             'usuario' => $_SESSION['usuario'] ?? 'admin',
             'nombre_completo' => $_SESSION['nombre_completo'] ?? ($_SESSION['usuario'] ?? 'Usuario'),
-            'rol' => $_SESSION['rol'] ?? 'admin'
+            'rol' => $_SESSION['rol'] ?? 'admin',
+            'aula_id' => isset($_SESSION['aula_id']) && $_SESSION['aula_id'] !== null ? (int)$_SESSION['aula_id'] : null
         ];
     }
 

@@ -19,12 +19,12 @@
   #define WIFI_PASSWORD   "TU_PASSWORD_AQUI"
 #endif
 
-// URL base del servidor en OVH (sin barra final)
-// Ejemplo: "https://tudominio.com" o "https://tudominio.com/control-aula/servidor/public"
-#define URL_SERVIDOR      "https://tu-dominio.com"
+// URL base del servidor (sin barra final)
+// Apuntando al VPS en producción por IP y puerto
+#define URL_SERVIDOR      "http://40.160.138.65:8085"
 
-// Clave API de autenticación con el servidor OVH (debe coincidir con API_KEY_ESP32 en app/config.php)
-#define API_KEY           "CAMBIAR_POR_CLAVE_ESP32_ALEATORIA_64BITS"
+// Clave API de autenticación con el servidor (coincide con Aula 1 en MySQL y API_KEY_ESP32 en app/config.php)
+#define API_KEY           "clave_secreta_esp32_aula_101_general_abc12345"
 
 // Versión del firmware
 #define FIRMWARE_VERSION  "1.0.0"
@@ -48,10 +48,35 @@
 // Verificación SSL: false usa client.setInsecure() para compatibilidad directa sin certificados intermedios
 #define VERIFICAR_CERTIFICADO_SSL false
 
-// Códigos IR predeterminados de respaldo para el control local directo si no hay conexión a OVH
-#define CODIGO_IR_PRENDER_DEF           0xFF629D    // NEC genérico prender aire
-#define CODIGO_IR_APAGAR_DEF            0xFF02FD    // NEC genérico apagar aire
-#define CODIGO_PROYECTOR_PRENDER_DEF    0x4CB0F00F  // NEC proyector prender
-#define CODIGO_PROYECTOR_APAGAR_DEF     0x4CB0708F  // NEC proyector apagar
+// Códigos IR predeterminados de respaldo para equipos reales del colegio (Epson + Star AC Coolix)
+#define CODIGO_PROYECTOR_PRENDER_DEF    0x8355906F  // Epson NEC 32-bit: Encender proyector
+#define CODIGO_PROYECTOR_APAGAR_DEF     0x8355906F  // Epson NEC 32-bit: Apagar proyector (2 pulsos con pausa de 2s)
+#define CODIGO_PROYECTOR_HDMI1_DEF      0x8355D926  // Epson: Entrada HDMI 1
+#define CODIGO_PROYECTOR_HDMI2_DEF      0x835530CF  // Epson: Entrada HDMI 2
+#define CODIGO_PROYECTOR_VGA_DEF        0x8355659A  // Epson: Entrada VGA
+#define CODIGO_PROYECTOR_FREEZE_DEF     0x8355926D  // Epson: Congelar imagen (Freeze)
+#define CODIGO_PROYECTOR_MUTE_DEF       0x8355936C  // Epson: A/V Mute (Pantalla en negro)
+#define CODIGO_PROYECTOR_VOL_MAS_DEF    0x835552AD  // Epson: Subir volumen
+#define CODIGO_PROYECTOR_VOL_MENOS_DEF  0x8355728D  // Epson: Bajar volumen
+
+#define REPETICIONES_PROYECTOR_APAGAR   2
+#define PAUSA_PROYECTOR_APAGAR_MS       2000
+
+#define CODIGO_STAR_AIRE_ON_DEF         0xB2BF40    // Star AC Coolix 24-bit: ON / 24°C Frío Auto
+#define CODIGO_STAR_AIRE_OFF_DEF        0xB27BE0    // Star AC Coolix 24-bit: OFF
+#define CODIGO_STAR_AIRE_FRIO18_DEF     0xB2BF00    // Star AC Coolix 24-bit: Frío 18°C Max
+#define CODIGO_STAR_AIRE_FRIO20_DEF     0xB2BF10    // Star AC Coolix 24-bit: Frío 20°C
+#define CODIGO_STAR_AIRE_FRIO22_DEF     0xB2BF20    // Star AC Coolix 24-bit: Frío 22°C
+#define CODIGO_STAR_AIRE_FRIO26_DEF     0xB2BF60    // Star AC Coolix 24-bit: Frío 26°C
+#define CODIGO_STAR_AIRE_CALOR21_DEF    0xB2BF95    // Star AC Coolix 24-bit: Calor 21°C
+#define CODIGO_STAR_AIRE_CALOR26_DEF    0xB2BF9C    // Star AC Coolix 24-bit: Calor 26°C
+#define CODIGO_STAR_AIRE_VENT_DEF       0xB2BFC8    // Star AC Coolix 24-bit: Modo Ventilación
+#define CODIGO_STAR_AIRE_SECO_DEF       0xB2BF84    // Star AC Coolix 24-bit: Modo Seco (Deshumidificador)
+#define CODIGO_STAR_AIRE_AUTO_DEF       0xB2BF08    // Star AC Coolix 24-bit: Modo Auto
+#define CODIGO_STAR_AIRE_SWING_DEF      0xB26BE0    // Star AC Coolix 24-bit: Oscilación Swing
+
+// Retrocompatibilidad directa
+#define CODIGO_IR_PRENDER_DEF           CODIGO_STAR_AIRE_ON_DEF
+#define CODIGO_IR_APAGAR_DEF            CODIGO_STAR_AIRE_OFF_DEF
 
 #endif // CONFIG_H

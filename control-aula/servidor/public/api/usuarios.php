@@ -14,14 +14,19 @@ habilitarCORS();
 $auth = autenticarPanelOApp();
 requerirRolAdmin($auth);
 $pdo = obtenerConexionDB();
+asegurarColumnasExtendidas($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $stmt = $pdo->query('SELECT id, usuario, nombre_completo, rol, activo, creado_en FROM usuarios ORDER BY id ASC');
+    $stmt = $pdo->query('SELECT id, usuario, nombre_completo, rol, aula_id, activo, aulas_permitidas, creado_en FROM usuarios ORDER BY id ASC');
     $usuarios = $stmt->fetchAll();
 
     foreach ($usuarios as &$u) {
         $u['id'] = (int) $u['id'];
+        $u['aula_id'] = $u['aula_id'] !== null ? (int)$u['aula_id'] : null;
         $u['activo'] = (int) $u['activo'];
+        if (empty($u['aulas_permitidas'])) {
+            $u['aulas_permitidas'] = 'todas';
+        }
     }
     unset($u);
 
@@ -116,8 +121,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $rol = strtolower(trim($datos['rol'] ?? 'profesor'));
     $activo = isset($datos['activo']) ? ((int) $datos['activo'] === 1 ? 1 : 0) : 1;
 
-    if (!in_array($rol, ['admin', 'profesor'], true)) {
-        responderJSON(['ok' => false, 'error' => 'El rol debe ser "admin" o "profesor"'], 422);
+    // Normalizar aulas permitidas
+    $aulasPermitidasRaw = $datos['aulas_permitidas'] ?? 'todas';
+    if ($rol === 'admin' || $aulasPermitidasRaw === 'todas') {
+        $aulasPermitidas = 'todas';
+    } elseif (is_array($aulasPermitidasRaw)) {
+        $cleanIds = array_values(array_unique(array_filter(array_map('intval', $aulasPermitidasRaw), function($v) { return $v > 0; })));
+        $aulasPermitidas = empty($cleanIds) ? 'todas' : json_encode($cleanIds);
+    } elseif (is_string($aulasPermitidasRaw) && (strpos($aulasPermitidasRaw, '[') === 0)) {
+        $aulasPermitidas = $aulasPermitidasRaw;
+    } else {
+        $aulasPermitidas = 'todas';
+    }
+
+    if (!in_array($rol, ['admin', 'aula', 'profesor'], true)) {
+        responderJSON(['ok' => false, 'error' => 'El rol debe ser "admin", "aula" o "profesor"'], 422);
     }
 
     if (empty($nombreCompleto) || strlen($nombreCompleto) < 2) {
@@ -163,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hash = password_hash($password, PASSWORD_BCRYPT);
             $stmtUpd = $pdo->prepare(
                 'UPDATE usuarios 
-                 SET usuario = :usuario, nombre_completo = :nombre, password_hash = :hash, rol = :rol, activo = :activo 
+                 SET usuario = :usuario, nombre_completo = :nombre, password_hash = :hash, rol = :rol, activo = :activo, aulas_permitidas = :aulas 
                  WHERE id = :id'
             );
             $stmtUpd->execute([
@@ -172,12 +190,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':hash'    => $hash,
                 ':rol'     => $rol,
                 ':activo'  => $activo,
+                ':aulas'   => $aulasPermitidas,
                 ':id'      => $id
             ]);
         } else {
             $stmtUpd = $pdo->prepare(
                 'UPDATE usuarios 
-                 SET usuario = :usuario, nombre_completo = :nombre, rol = :rol, activo = :activo 
+                 SET usuario = :usuario, nombre_completo = :nombre, rol = :rol, activo = :activo, aulas_permitidas = :aulas 
                  WHERE id = :id'
             );
             $stmtUpd->execute([
@@ -185,6 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':nombre'  => substr($nombreCompleto, 0, 100),
                 ':rol'     => $rol,
                 ':activo'  => $activo,
+                ':aulas'   => $aulasPermitidas,
                 ':id'      => $id
             ]);
         }
@@ -204,7 +224,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'usuario' => $usuario,
                 'nombre_completo' => $nombreCompleto,
                 'rol' => $rol,
-                'activo' => $activo
+                'activo' => $activo,
+                'aulas_permitidas' => $aulasPermitidas
             ]
         ]);
     } else {
@@ -225,15 +246,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $hash = password_hash($password, PASSWORD_BCRYPT);
         $stmtIns = $pdo->prepare(
-            'INSERT INTO usuarios (usuario, password_hash, nombre_completo, rol, activo, creado_en) 
-             VALUES (:usuario, :hash, :nombre, :rol, :activo, NOW())'
+            'INSERT INTO usuarios (usuario, password_hash, nombre_completo, rol, activo, aulas_permitidas, creado_en) 
+             VALUES (:usuario, :hash, :nombre, :rol, :activo, :aulas, NOW())'
         );
         $stmtIns->execute([
             ':usuario' => $usuario,
             ':hash'    => $hash,
             ':nombre'  => substr($nombreCompleto, 0, 100),
             ':rol'     => $rol,
-            ':activo'  => $activo
+            ':activo'  => $activo,
+            ':aulas'   => $aulasPermitidas
         ]);
 
         $nuevoId = (int) $pdo->lastInsertId();
@@ -253,7 +275,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'usuario' => $usuario,
                 'nombre_completo' => $nombreCompleto,
                 'rol' => $rol,
-                'activo' => $activo
+                'activo' => $activo,
+                'aulas_permitidas' => $aulasPermitidas
             ]
         ]);
     }

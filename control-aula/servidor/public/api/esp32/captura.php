@@ -1,8 +1,8 @@
 <?php
 /**
  * POST /api/esp32/captura
- * Endpoint donde el ESP32 envía los códigos o tramas infrarrojas capturadas por el KY-022.
- * Soporta valores simples (hex), estados de trama larga (estado_hex) y secuencias en microsegundos (raw).
+ * Endpoint donde el ESP32 envía los códigos o tramas infrarrojas capturadas por el KY-022,
+ * asociándolas a su aula correspondiente (Multi-Aula).
  * Autenticación: Cabecera X-API-Key con hash_equals.
  * Respuesta: Texto plano "OK".
  */
@@ -21,7 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-autenticarESP32();
+$pdo = obtenerConexionDB();
+asegurarColumnasExtendidas($pdo);
+
+$aula = autenticarESP32($pdo);
+$aulaId = (int) $aula['id'];
+
 $datos = obtenerDatosEntrada();
 
 $protocolo = isset($datos['protocolo']) ? strtoupper(substr(trim($datos['protocolo']), 0, 30)) : 'DESCONOCIDO';
@@ -38,23 +43,22 @@ if (empty($valor) && empty($estadoHex) && empty($raw)) {
     exit;
 }
 
-$pdo = obtenerConexionDB();
-
 $stmt = $pdo->prepare(
-    'INSERT INTO capturas_ir (protocolo, valor, bits, estado_hex, raw, creado_en) 
-     VALUES (:protocolo, :valor, :bits, :estado_hex, :raw, NOW())'
+    'INSERT INTO capturas_ir (protocolo, valor, bits, estado_hex, raw, aula_id, creado_en) 
+     VALUES (:protocolo, :valor, :bits, :estado_hex, :raw, :aula_id, NOW())'
 );
 $stmt->execute([
     ':protocolo'  => $protocolo,
     ':valor'      => $valor,
     ':bits'       => $bits,
     ':estado_hex' => $estadoHex,
-    ':raw'        => $raw
+    ':raw'        => $raw,
+    ':aula_id'    => $aulaId
 ]);
 
 $capturaId = (int) $pdo->lastInsertId();
 
-$detalleLog = "Captura #{$capturaId}: {$protocolo}";
+$detalleLog = "Captura #{$capturaId} (Aula #{$aulaId}): {$protocolo}";
 if (!empty($valor)) $detalleLog .= " {$valor} ({$bits} bits)";
 if (!empty($estadoHex)) $detalleLog .= " [Estado: " . substr($estadoHex, 0, 16) . "...]";
 if (!empty($raw)) $detalleLog .= " [Raw activo]";
@@ -63,7 +67,8 @@ registrarEvento(
     $pdo,
     'esp32',
     'CAPTURA_IR_RECIBIDA',
-    $detalleLog
+    $detalleLog,
+    $aulaId
 );
 
 header('Content-Type: text/plain; charset=utf-8');

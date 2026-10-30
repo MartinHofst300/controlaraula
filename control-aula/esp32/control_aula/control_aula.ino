@@ -137,7 +137,8 @@ IRsend emisorIR(PIN_IR_SEND);
 IRrecv receptorIR(PIN_IR_RECV, 1024, 50, true);
 decode_results resultadosIR;
 
-// Cliente HTTPS global para reutilizar sockets TLS persistentes
+// Clientes de red (HTTPS con TLS y HTTP directo)
+WiFiClient clienteHTTP;
 WiFiClientSecure clienteSSL;
 HTTPClient http;
 
@@ -207,7 +208,8 @@ void setup() {
         clienteSSL.setInsecure();
     #endif
     clienteSSL.setTimeout(HTTP_TIMEOUT_MS / 1000);
-    http.setReuse(true); // Reutilizar socket TLS para minimizar latencia en el loop
+    clienteHTTP.setTimeout(HTTP_TIMEOUT_MS / 1000);
+    http.setReuse(true); // Reutilizar socket para minimizar latencia en el loop
     http.setTimeout(HTTP_TIMEOUT_MS);
 
     // 4. Conexión a red WiFi
@@ -306,10 +308,17 @@ void actualizarLedEstado() {
 // POLLING UNIFICADO (POST /api/esp32/sincronizar): TELEMETRÍA + COMANDOS
 // -----------------------------------------------------------------------------
 void sincronizarYReportar() {
-    String urlSync = formatearRutaUrl(URL_SERVIDOR, "/api/esp32/sincronizar");
+    String urlSync = formatearRutaUrl(URL_SERVIDOR, "/api/esp32/sincronizar.php");
 
-    if (!http.begin(clienteSSL, urlSync)) {
-        Serial.println(F("[HTTP SYNC] Error al inicializar conexion SSL"));
+    bool conexionOk = false;
+    if (urlSync.startsWith("https://")) {
+        conexionOk = http.begin(clienteSSL, urlSync);
+    } else {
+        conexionOk = http.begin(clienteHTTP, urlSync);
+    }
+
+    if (!conexionOk) {
+        Serial.println(F("[HTTP SYNC] Error al inicializar conexion HTTP/HTTPS"));
         ultimoSyncOk = false;
         intervaloPolling = INTERVALO_BACKOFF_MS;
         return;
@@ -339,6 +348,7 @@ void sincronizarYReportar() {
     int irRep = 1;
     int irPausa = 100;
     int irKhz = 38;
+    String irAcState = "";
 
     if (httpCodigo == 200) {
         ultimoSyncOk = true;
@@ -394,6 +404,8 @@ void sincronizarYReportar() {
                     irPausa = valor.toInt();
                 } else if (clave.equalsIgnoreCase("ir_khz")) {
                     irKhz = valor.toInt();
+                } else if (clave.equalsIgnoreCase("ir_ac_state")) {
+                    irAcState = valor;
                 }
             }
         }
@@ -414,9 +426,18 @@ void sincronizarYReportar() {
             Serial.print(comandoIrId);
             Serial.print(F(" (Proto: "));
             Serial.print(irProto);
+            Serial.print(F(", Code: "));
+            Serial.print(irCode);
             Serial.print(F(", Reps: "));
             Serial.print(irRep);
+            Serial.print(F(", Pausa: "));
+            Serial.print(irPausa);
             Serial.println(F(")"));
+
+            if (irAcState.length() > 0) {
+                Serial.print(F("[IR AC STATE] "));
+                Serial.println(irAcState);
+            }
 
             transmitirComandoIR(irProto, irCode, irBits, irState, irRaw, irRep, irPausa, irKhz);
             ultimoIrEjecutadoId = comandoIrId; // Se confirmará en el próximo polling
@@ -478,11 +499,17 @@ void verificarCapturaIR() {
             Serial.print(F("Muestras RAW: ")); Serial.println(rawLen);
         }
 
-        // Enviar captura al servidor OVH si hay WiFi
+        // Enviar captura al servidor si hay WiFi
         if (WiFi.status() == WL_CONNECTED) {
             HTTPClient httpCap;
-            String urlCap = formatearRutaUrl(URL_SERVIDOR, "/api/esp32/captura");
-            if (httpCap.begin(clienteSSL, urlCap)) {
+            String urlCap = formatearRutaUrl(URL_SERVIDOR, "/api/esp32/captura.php");
+            bool capOk = false;
+            if (urlCap.startsWith("https://")) {
+                capOk = httpCap.begin(clienteSSL, urlCap);
+            } else {
+                capOk = httpCap.begin(clienteHTTP, urlCap);
+            }
+            if (capOk) {
                 httpCap.setTimeout(4000);
                 httpCap.addHeader("Content-Type", "application/x-www-form-urlencoded");
                 httpCap.addHeader("X-API-Key", API_KEY);
@@ -562,7 +589,9 @@ void ejecutarEnvioEstado(decode_type_t tipo, const String& estadoHex) {
 
 void ejecutarEnvioCorto(decode_type_t tipo, uint64_t codigoNum, uint16_t bits) {
     uint16_t nbits = bits > 0 ? bits : 32;
-    if (tipo != UNKNOWN && emisorIR.send(tipo, codigoNum, nbits)) {
+    if (tipo == COOLIX) {
+        emisorIR.sendCoolix(codigoNum, bits > 0 ? bits : 24);
+    } else if (tipo != UNKNOWN && emisorIR.send(tipo, codigoNum, nbits)) {
         // Envió con éxito usando el protocolo reconocido
     } else {
         // Fallback a NEC
@@ -574,6 +603,14 @@ void transmitirComandoIR(const String& protoStr, const String& codeHex, uint16_t
                          const String& stateHex, const String& rawData,
                          uint16_t repeticiones, uint16_t pausaMs, uint16_t khz) {
     decode_type_t tipo = strToDecodeType(protoStr.c_str());
+    if (protoStr.equalsIgnoreCase("COOLIX")) {
+        tipo = COOLIX;
+        if (bits <= 0) bits = 24;
+    } else if (protoStr.equalsIgnoreCase("EPSON_NEC") || protoStr.equalsIgnoreCase("EPSON")) {
+        tipo = NEC;
+        if (bits <= 0) bits = 32;
+    }
+
     uint16_t reps = (repeticiones > 0) ? repeticiones : 1;
     uint16_t pausa = (pausaMs > 0) ? pausaMs : 100;
     uint64_t codigoNum = convertirHexAUint64(codeHex);
@@ -676,14 +713,14 @@ void configurarServidorLocal() {
             String acc = servidorLocal.arg("accion");
             acc.toLowerCase();
             if (acc == "prender") {
-                transmitirComandoIR("NEC", String(CODIGO_IR_PRENDER_DEF, HEX), 32, "", "", 1, 100, 38);
-                Serial.println(F("[HTTP LOCAL] Comando IR Prender Aire enviado"));
-                responderJSONLocal(200, "{\"ok\":true,\"mensaje\":\"Comando IR Prender Aire enviado\"}");
+                transmitirComandoIR("COOLIX", String(CODIGO_STAR_AIRE_ON_DEF, HEX), 24, "", "", 1, 100, 38);
+                Serial.println(F("[HTTP LOCAL] Comando IR Prender Aire Star (Coolix 24°C Frío) enviado"));
+                responderJSONLocal(200, "{\"ok\":true,\"mensaje\":\"Comando IR Prender Aire Star enviado\"}");
                 return;
             } else if (acc == "apagar") {
-                transmitirComandoIR("NEC", String(CODIGO_IR_APAGAR_DEF, HEX), 32, "", "", 1, 100, 38);
-                Serial.println(F("[HTTP LOCAL] Comando IR Apagar Aire enviado"));
-                responderJSONLocal(200, "{\"ok\":true,\"mensaje\":\"Comando IR Apagar Aire enviado\"}");
+                transmitirComandoIR("COOLIX", String(CODIGO_STAR_AIRE_OFF_DEF, HEX), 24, "", "", 1, 100, 38);
+                Serial.println(F("[HTTP LOCAL] Comando IR Apagar Aire Star (Coolix) enviado"));
+                responderJSONLocal(200, "{\"ok\":true,\"mensaje\":\"Comando IR Apagar Aire Star enviado\"}");
                 return;
             }
         }
@@ -697,14 +734,14 @@ void configurarServidorLocal() {
             acc.toLowerCase();
             if (acc == "prender") {
                 transmitirComandoIR("NEC", String(CODIGO_PROYECTOR_PRENDER_DEF, HEX), 32, "", "", 1, 100, 38);
-                Serial.println(F("[HTTP LOCAL] Comando IR Prender Proyector enviado"));
-                responderJSONLocal(200, "{\"ok\":true,\"mensaje\":\"Comando IR Prender Proyector enviado\"}");
+                Serial.println(F("[HTTP LOCAL] Comando IR Prender Proyector Epson enviado"));
+                responderJSONLocal(200, "{\"ok\":true,\"mensaje\":\"Comando IR Prender Proyector Epson enviado\"}");
                 return;
             } else if (acc == "apagar") {
-                // El proyector usualmente requiere 2 repeticiones con pausa
-                transmitirComandoIR("NEC", String(CODIGO_PROYECTOR_APAGAR_DEF, HEX), 32, "", "", 2, 250, 38);
-                Serial.println(F("[HTTP LOCAL] Comando IR Apagar Proyector enviado (2x)"));
-                responderJSONLocal(200, "{\"ok\":true,\"mensaje\":\"Comando IR Apagar Proyector enviado\"}");
+                // Epson requiere 2 pulsos con pausa de 2 segundos (2000 ms) para confirmar
+                transmitirComandoIR("NEC", String(CODIGO_PROYECTOR_APAGAR_DEF, HEX), 32, "", "", REPETICIONES_PROYECTOR_APAGAR, PAUSA_PROYECTOR_APAGAR_MS, 38);
+                Serial.println(F("[HTTP LOCAL] Comando IR Apagar Proyector Epson enviado (2 pulsos con pausa de 2s)"));
+                responderJSONLocal(200, "{\"ok\":true,\"mensaje\":\"Comando IR Apagar Proyector Epson enviado (2x con confirmación)\"}");
                 return;
             }
         }

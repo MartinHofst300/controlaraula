@@ -22,6 +22,11 @@ ServerSignature Off
     RewriteRule ^api/codigos/?$ api/codigos.php [L,QSA]
     RewriteRule ^api/capturas/asignar/?$ api/capturas/asignar.php [L,QSA]
     RewriteRule ^api/capturas/?$ api/capturas.php [L,QSA]
+    RewriteRule ^api/usuarios/?$ api/usuarios.php [L,QSA]
+    RewriteRule ^api/aulas/?$ api/aulas.php [L,QSA]
+    RewriteRule ^api/escenas/?$ api/escenas.php [L,QSA]
+    RewriteRule ^api/preferencias/?$ api/preferencias.php [L,QSA]
+    RewriteRule ^api/perfil/?$ api/perfil.php [L,QSA]
     RewriteRule ^api/log/?$ api/log.php [L,QSA]
 
     # Si el archivo o directorio solicitado existe físicamente, servirlo
