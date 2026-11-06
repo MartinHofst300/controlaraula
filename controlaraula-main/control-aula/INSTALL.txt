@@ -1,0 +1,24 @@
+CONTROL DE AULA - GUIA RAPIDA DE INSTALACION
+----------------------------------------------------
+1. SUBIR ARCHIVOS AL HOSTING OVH:
+   Copiar todo el contenido de 'servidor/' al directorio web del hosting (ej. /www o /public_html).
+
+2. IMPORTAR BASE DE DATOS:
+   Crear la BD en OVH e importar 'sql/schema.sql' (o 'sql/migracion.sql' si se actualiza).
+
+3. CONFIGURACION DEL SERVIDOR:
+   Editar 'app/config.php' y completar:
+   - DB_HOST, DB_NAME, DB_USER y DB_PASS con las credenciales de la BD.
+   - API_KEY_ESP32: clave secreta compartida con el ESP32.
+   - TOKEN_APP: token secreto para la app movil de los companeros.
+   - PANEL_PASSWORD_HASH: hash de la clave del panel (por defecto clave provisional: admin123).
+
+4. CONFIGURACION Y CARGA DEL ESP32:
+   Abrir 'esp32/control_aula/control_aula.ino' en Arduino IDE 1.8.x (core esp32 2.0.17).
+   Asegurarse de tener la libreria IRremoteESP8266 instalada en el IDE.
+   Editar 'config.h' con el WIFI_SSID, WIFI_PASSWORD, URL_SERVIDOR y API_KEY.
+   Compilar y subir el sketch a la placa ESP32 DevKit V1.
+
+5. VERIFICACION:
+   Ingresar con el navegador a la URL de tu dominio para operar el panel web,
+   o a '/simulador.php' para probar las comunicaciones de extremo a extremo sin hardware.

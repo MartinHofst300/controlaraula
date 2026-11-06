@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: control-aula-web
+    restart: always
+    ports:
+      - "8085:80"
+    volumes:
+      - ./:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: control_aula
+      DB_USER: root
+      DB_PASS: ""
+    depends_on:
+      - db
+
+  db:
+    image: mariadb:10.11
+    container_name: control-aula-db
+    restart: always
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+      MARIADB_DATABASE: control_aula
+    volumes:
+      - control_aula_db_data:/var/lib/mysql
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+
+volumes:
+  control_aula_db_data:
+
