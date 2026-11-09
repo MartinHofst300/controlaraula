@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visor CAD 3D Interactivo - Carcasa Triangular Control de Aula</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --border: #334155;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+  .sidebar {
+    width: 380px; background: var(--panel); border-right: 1px solid var(--border);
+    padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto;
+  }
+  h1 { font-size: 1.1rem; color: var(--accent); line-height: 1.3; }
+  .subtitle { font-size: 0.8rem; color: var(--muted); }
+  .card {
+    background: rgba(15, 23, 42, 0.65); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .card h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #cbd5e1; }
+  .control-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; gap: 8px; }
+  input[type="range"] { width: 140px; accent-color: var(--accent); cursor: pointer; }
+  .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.76rem; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .btn-group { display: flex; flex-direction: column; gap: 7px; }
+  .btn {
+    display: flex; align-items: center; justify-content: space-between;
+    text-decoration: none; background: #2563eb; color: #fff; padding: 9px 12px;
+    border-radius: 7px; font-size: 0.82rem; font-weight: 600; transition: 0.15s;
+    border: none; cursor: pointer;
+  }
+  .btn:hover { background: #1d4ed8; }
+  .btn.secondary { background: #334155; }
+  .btn.secondary:hover { background: #475569; }
+  .spec-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+  .spec-table td { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .spec-table td:last-child { text-align: right; color: var(--accent); font-family: monospace; }
+  .viewport { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; }
+  canvas { width: 100%; height: 100%; cursor: grab; display: block; }
+  canvas:active { cursor: grabbing; }
+  .hud {
+    position: absolute; top: 16px; right: 16px; background: rgba(15, 23, 42, 0.85);
+    border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px;
+    font-size: 0.78rem; color: var(--muted); pointer-events: none;
+  }
+</style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div>
+      <h1>Carcasa Triangular 3D — Control de Aula</h1>
+      <p class="subtitle">Prisma Rectángulo 90° (160 × 160 × 56 mm) con Rótulas IR Orientables</p>
+    </div>
+
+    <div class="card">
+      <h2>Controles Interactivos</h2>
+      <div class="control-row">
+        <label>Apertura de Tapa:</label>
+        <input type="range" id="lidOpen" min="0" max="70" value="45">
+      </div>
+      <div class="control-row">
+        <label>Orientación LED 1 (Aire):</label>
+        <input type="range" id="led1Yaw" min="-40" max="40" value="-20">
+      </div>
+      <div class="control-row">
+        <label>Orientación LED 2 (Proyector):</label>
+        <input type="range" id="led2Yaw" min="-40" max="40" value="25">
+      </div>
+      <div class="control-row">
+        <label><input type="checkbox" id="showComponents" checked> Ver placas y módulos internos</label>
+      </div>
+      <div class="control-row">
+        <label><input type="checkbox" id="showLabels" checked> Ver etiquetas y cotas (mm)</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Referencia de Zonas y Componentes</h2>
+      <div class="legend">
+        <div class="legend-item"><span class="swatch" style="background:#3b82f6"></span>Carcasa Triangular</div>
+        <div class="legend-item"><span class="swatch" style="background:#ef4444"></span>Tabique Aislante 220V</div>
+        <div class="legend-item"><span class="swatch" style="background:#10b981"></span>ESP32 USB-C (52×29)</div>
+        <div class="legend-item"><span class="swatch" style="background:#0ea5e9"></span>Relé 1 Canal (50×26)</div>
+        <div class="legend-item"><span class="swatch" style="background:#a855f7"></span>Hi-Link 5M05 (38×23)</div>
+        <div class="legend-item"><span class="swatch" style="background:#f59e0b"></span>2× Rótulas IR + KY-022</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Medidas Reales Aplicadas (+Tolerancia)</h2>
+      <table class="spec-table">
+        <tr><td>Catetos X / Y (Esquina 90°)</td><td>160 × 160 mm</td></tr>
+        <tr><td>Frente Hipotenusa (Aula)</td><td>226.3 mm</td></tr>
+        <tr><td>Altura Interna (p/ cables 20cm)</td><td>50.0 mm</td></tr>
+        <tr><td>Cuna ESP32 USB-C (CH340C)</td><td>52.8 × 29.8 mm</td></tr>
+        <tr><td>Cuna Módulo Relé 10A</td><td>50.8 × 26.8 mm</td></tr>
+        <tr><td>Cuna Elevada Hi-Link HLK-5M05</td><td>38.8 × 23.8 × +10mm</td></tr>
+        <tr><td>2× Rótulas Esféricas Ranuradas</td><td>Ø 16mm / LED 5.2mm</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Archivos Listos para Tinkercad / Impresora 3D</h2>
+      <div class="btn-group">
+        <a class="btn" href="1_base_carcasa_triangular.stl" download>
+          <span>1. Descargar Base Triangular (.STL)</span><span>⬇</span>
+        </a>
+        <a class="btn" href="2_tapa_ventilada_triangular.stl" download>
+          <span>2. Descargar Tapa Ventilada (.STL)</span><span>⬇</span>
+        </a>
+        <a class="btn" href="3_rotulas_orientables_leds_ir.stl" download>
+          <span>3. Descargar 2× Rótulas LEDs IR (.STL)</span><span>⬇</span>
+        </a>
+        <a class="btn secondary" href="carcasa_triangular.scad" download>
+          <span>Código Fuente Paramétrico (.SCAD)</span><span>⚙</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="viewport">
+    <canvas id="cadCanvas"></canvas>
+    <div class="hud">
+      🖱️ <b>Arrastrar:</b> Rotar 360° &nbsp;|&nbsp; <b>Rueda:</b> Zoom &nbsp;|&nbsp; <b>Doble clic:</b> Centrar vista
+    </div>
+  </main>
+
+<script>
+const canvas = document.getElementById('cadCanvas');
+const ctx = canvas.getContext('2d');
+
+let rotZ = -0.65;
+let rotX = 0.95;
+let zoom = 2.6;
+let dragging = false;
+let lastX = 0, lastY = 0;
+
+function resize() {
+  canvas.width = canvas.clientWidth * window.devicePixelRatio;
+  canvas.height = canvas.clientHeight * window.devicePixelRatio;
+}
+window.addEventListener('resize', () => { resize(); render(); });
+resize();
+
+canvas.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+window.addEventListener('mouseup', () => dragging = false);
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  rotZ += (e.clientX - lastX) * 0.01;
+  rotX = Math.max(0.15, Math.min(1.5, rotX + (e.clientY - lastY) * 0.01));
+  lastX = e.clientX; lastY = e.clientY;
+  render();
+});
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom = Math.max(1.2, Math.min(5.5, zoom * (e.deltaY < 0 ? 1.08 : 0.92)));
+  render();
+}, { passive: false });
+canvas.addEventListener('dblclick', () => { rotZ = -0.65; rotX = 0.95; zoom = 2.6; render(); });
+
+['lidOpen', 'led1Yaw', 'led2Yaw', 'showComponents', 'showLabels'].forEach(id => {
+  document.getElementById(id).addEventListener('input', render);
+});
+
+// Centro geométrico del modelo para rotación: (55, 55, 25)
+const cxModel = 55, cyModel = 55, czModel = 25;
+
+function project([x, y, z]) {
+  const dx = x - cxModel;
+  const dy = y - cyModel;
+  const dz = z - czModel;
+  const cosZ = Math.cos(rotZ), sinZ = Math.sin(rotZ);
+  const x1 = dx * cosZ - dy * sinZ;
+  const y1 = dx * sinZ + dy * cosZ;
+  const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+  const y2 = y1 * cosX - dz * sinX;
+  const z2 = y1 * sinX + dz * cosX;
+  const scale = zoom * (canvas.width / 620) * (500 / (500 - z2 * 0.6));
+  return [
+    canvas.width * 0.5 + x1 * scale,
+    canvas.height * 0.54 - y2 * scale,
+    z2
+  ];
+}
+
+function makeBoxFaces(x0, y0, z0, dx, dy, dz, color, alpha = 0.88) {
+  const x1 = x0 + dx, y1 = y0 + dy, z1 = z0 + dz;
+  const v = [
+    [x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],
+    [x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]
+  ];
+  const idx = [
+    [0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[0,3,7,4],[1,2,6,5]
+  ];
+  return idx.map(f => ({ pts: f.map(i => v[i]), color, alpha }));
+}
+
+function makePrismFaces(pts2d, z0, z1, color, alpha = 0.88) {
+  const faces = [];
+  const bot = pts2d.map(([x,y]) => [x,y,z0]);
+  const top = pts2d.map(([x,y]) => [x,y,z1]);
+  faces.push({ pts: bot, color, alpha });
+  faces.push({ pts: top, color, alpha });
+  for (let i = 0; i < pts2d.length; i++) {
+    const j = (i + 1) % pts2d.length;
+    faces.push({ pts: [bot[i], bot[j], top[j], top[i]], color, alpha });
+  }
+  return faces;
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const faces = [];
+  const lidZ = parseFloat(document.getElementById('lidOpen').value);
+  const led1Yaw = parseFloat(document.getElementById('led1Yaw').value) * Math.PI / 180;
+  const led2Yaw = parseFloat(document.getElementById('led2Yaw').value) * Math.PI / 180;
+  const showComp = document.getElementById('showComponents').checked;
+  const showLbl = document.getElementById('showLabels').checked;
+
+  // 1. Piso triangular (160 x 160 x 3mm)
+  faces.push(...makePrismFaces([[0,0],[160,0],[0,160]], 0, 3, '#1e40af', 0.92));
+
+  // 2. Paredes exteriores (Cateto X, Cateto Y, Hipotenusa)
+  faces.push(...makeBoxFaces(0, 0, 3, 58.4, 2.8, 50, '#2563eb', 0.82));
+  faces.push(...makeBoxFaces(71.4, 0, 3, 88.6, 2.8, 50, '#2563eb', 0.82)); // Deja hueco USB-C en X=58.4..71.4
+  faces.push(...makeBoxFaces(0, 2.8, 3, 2.8, 157.2, 50, '#2563eb', 0.82));
+  faces.push(...makePrismFaces([[160,0],[0,160],[0,156],[156,0]], 3, 53, '#3b82f6', 0.55));
+
+  // 3. Tabique Dieléctrico 220V (X = 36mm)
+  faces.push(...makeBoxFaces(36, 2.8, 3, 2.4, 118, 39, '#ef4444', 0.88));
+
+  if (showComp) {
+    // 4. Fuente Hi-Link HLK-5M05 (38 x 23 x 18 mm) elevada 10mm sobre el piso en Zona 220V
+    faces.push(...makeBoxFaces(6.5, 18, 3, 23.8, 38.8, 10, '#475569', 0.75)); // Cuna elevada 10mm
+    faces.push(...makeBoxFaces(6.5, 18, 13, 23.8, 38.8, 18, '#9333ea', 0.95)); // Bloque Hi-Link
+
+    // 5. Módulo Relé 1 Canal (50 x 26 x 18.5 mm) en Zona 220V
+    faces.push(...makeBoxFaces(6, 66, 7, 26.8, 50.8, 18.5, '#0284c7', 0.95));
+
+    // 6. ESP32 USB-C (52 x 29 x 15 mm) en Zona 5V con puerto USB-C mirando a Y=0
+    faces.push(...makeBoxFaces(50, 2.8, 7, 29.8, 52.8, 15, '#10b981', 0.95));
+    // Conector USB-C asomando en Y=0
+    faces.push(...makeBoxFaces(60.4, -1, 7.5, 9.0, 6.0, 3.5, '#e2e8f0', 0.98));
+
+    // 7. Bandeja Arnés BC337 + Resistencias
+    faces.push(...makeBoxFaces(86, 6, 3, 36, 22, 12, '#eab308', 0.8));
+
+    // 8. Receptor IR KY-022 en el centro de la Hipotenusa (80, 80)
+    faces.push(...makeBoxFaces(74, 74, 8, 10, 10, 16, '#f97316', 0.95));
+  }
+
+  // 9. Las 2 Rótulas Esféricas Orientables + Haz Infrarrojo en (56,104) y (104,56)
+  [[56, 104, led1Yaw], [104, 56, led2Yaw]].forEach(([lx, ly, yaw]) => {
+    faces.push(...makeBoxFaces(lx - 6, ly - 6, 19, 12, 12, 12, '#f59e0b', 0.96));
+    // Vector del haz IR apuntando hacia el aula (normal a la hipotenusa = +45 grados + yaw)
+    const baseAngle = Math.PI / 4 + yaw;
+    const bx = lx + Math.cos(baseAngle) * 32;
+    const by = ly + Math.sin(baseAngle) * 32;
+    faces.push(...makePrismFaces([
+      [lx - 2, ly + 2], [lx + 2, ly - 2], [bx + 6, by - 6], [bx - 6, by + 6]
+    ], 23, 27, '#fbbf24', 0.45));
+  });
+
+  // 10. Tapa Superior Ventilada (desplazada según slider lidZ)
+  if (lidZ < 68) {
+    faces.push(...makePrismFaces([[0,0],[160,0],[0,160]], 53 + lidZ, 56 + lidZ, '#60a5fa', 0.40));
+  }
+
+  // Ordenar caras por profundidad Z proyectada (Painter's Algorithm)
+  const projectedFaces = faces.map(f => {
+    const ppts = f.pts.map(project);
+    const avgZ = ppts.reduce((acc, p) => acc + p[2], 0) / ppts.length;
+    return { ppts, avgZ, color: f.color, alpha: f.alpha };
+  }).sort((a, b) => a.avgZ - b.avgZ);
+
+  // Dibujar caras
+  for (const pf of projectedFaces) {
+    ctx.beginPath();
+    ctx.moveTo(pf.ppts[0][0], pf.ppts[0][1]);
+    for (let i = 1; i < pf.ppts.length; i++) ctx.lineTo(pf.ppts[i][0], pf.ppts[i][1]);
+    ctx.closePath();
+    ctx.globalAlpha = pf.alpha;
+    ctx.fillStyle = pf.color;
+    ctx.fill();
+    ctx.globalAlpha = Math.min(1, pf.alpha + 0.15);
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.55)';
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Etiquetas flotantes 3D
+  if (showLbl) {
+    const labels = [
+      { pos: [18, 37, 34], text: 'Hi-Link HLK-5M05 (38×23mm)', bg: '#9333ea' },
+      { pos: [19, 91, 29], text: 'Relé 10A 250VAC (50×26mm)', bg: '#0284c7' },
+      { pos: [37, 60, 45], text: 'Tabique Aislante 220V', bg: '#ef4444' },
+      { pos: [65, 29, 25], text: 'ESP32 USB-C (52×29mm)', bg: '#10b981' },
+      { pos: [65, -4, 9],  text: 'Puerto USB-C', bg: '#475569' },
+      { pos: [-4, 35, 17], text: 'Línea 220V (Fase + Neutro)', bg: '#dc2626' },
+      { pos: [-4, 92, 18], text: 'Boca Cablecanal 20×10 / Luz Pared', bg: '#dc2626' },
+      { pos: [18, 70, 2],  text: 'Pasacable Pared Embutida (20×16mm)', bg: '#b91c1c' },
+      { pos: [115, -2, 36], text: 'Ojal Tornillo Pared', bg: '#64748b' },
+      { pos: [-2, 125, 36], text: 'Ojal Tornillo Pared', bg: '#64748b' },
+      { pos: [56, 104, 35], text: 'Rótula LED 1 (Aire)', bg: '#d97706' },
+      { pos: [80, 80, 28],  text: 'Ventana Receptor KY-022', bg: '#ea580c' },
+      { pos: [104, 56, 35], text: 'Rótula LED 2 (Proyector)', bg: '#d97706' },
+      { pos: [104, 17, 18], text: 'Arnés BC337 + Cables 20cm', bg: '#ca8a04' }
+    ];
+    ctx.font = `600 ${Math.round(11 * window.devicePixelRatio)}px Segoe UI, sans-serif`;
+    for (const lbl of labels) {
+      const [px, py] = project(lbl.pos);
+      const pad = 5 * window.devicePixelRatio;
+      const w = ctx.measureText(lbl.text).width + pad * 2;
+      const h = 18 * window.devicePixelRatio;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.strokeStyle = lbl.bg;
+      ctx.lineWidth = 1.5 * window.devicePixelRatio;
+      ctx.beginPath();
+      ctx.roundRect(px - w/2, py - h/2, w, h, 4 * window.devicePixelRatio);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#f8fafc';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(lbl.text, px, py);
+    }
+  }
+}
+
+render();
+</script>
+</body>
+</html>
+

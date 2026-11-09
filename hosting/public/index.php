@@ -46,8 +46,15 @@ if ($rol === 'aula') {
 <html lang="es" data-theme="oscuro" data-accent="dorado" data-font="sans" data-density="comoda" data-contrast="normal" data-motion="normal">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#1c1818">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Control Aula">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <meta name="csrf-token" content="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
     <meta name="user-role" content="<?php echo htmlspecialchars($rol, ENT_QUOTES, 'UTF-8'); ?>">
     <meta name="user-id" content="<?php echo $usuarioIdActual; ?>">
@@ -177,6 +184,15 @@ if ($rol === 'aula') {
                     <span>Simulador</span>
                 </a>
                 <?php endif; ?>
+
+                <button type="button" data-btn-instalar-pwa class="btn btn-secundario btn-pequeno btn-instalar-pwa" title="Instalar aplicación en tu celular o PC">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Instalar App</span>
+                </button>
 
                 <button type="button" id="btnAbrirConfig" class="btn btn-secundario btn-pequeno" title="Centro de Configuración, Preferencias y Perfil">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1274,7 +1290,8 @@ if ($rol === 'aula') {
         </div>
     </div>
 
-    <!-- Script Principal del Panel -->
+    <!-- Script Principal del Panel y PWA -->
     <script src="assets/js/panel.js"></script>
+    <script src="assets/js/pwa.js"></script>
 </body>
 </html>

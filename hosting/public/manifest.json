@@ -1,0 +1,57 @@
+{
+  "id": "control-de-aula-iot",
+  "name": "Control de Aula — Gestión Inteligente IoT",
+  "short_name": "Control Aula",
+  "description": "Control remoto inteligente de climatización, iluminación y proyector multimedia del aula.",
+  "lang": "es-AR",
+  "start_url": "./index.php",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#1c1818",
+  "theme_color": "#1c1818",
+  "categories": ["education", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Panel del Aula",
+      "short_name": "Panel",
+      "description": "Abrir el control de luces, aire y proyector",
+      "url": "./index.php",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
+

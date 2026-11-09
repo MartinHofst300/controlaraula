@@ -1,0 +1,48 @@
+======================================================================
+GUÍA DE IMPRESIÓN 3D Y ARMADO - CARCASA TRIANGULAR CONTROL DE AULA
+======================================================================
+
+ARCHIVOS INCLUIDOS EN ESTE .ZIP PARA LA IMPRESORA 3D:
+----------------------------------------------------------------------
+1. 1_base_carcasa_triangular.stl
+   - Cuerpo principal triangular (160 x 160 x 53 mm).
+   - Incluye cunas para:
+     * ESP32 NodeMCU-32S USB-C (52 x 29 x 15 mm) con salida USB-C.
+     * Módulo Relé 1 Canal 5V 10A (50 x 26 x 18.5 mm).
+     * Fuente Aislada Hi-Link HLK-5M05 (38 x 23 x 18 mm) elevada 10 mm
+       para alojar las soldaduras inferiores (+Vo/-Vo y AC).
+   - Incluye tabique interno aislante que separa la zona de 220V (Luz
+     de pared y Fuente Hi-Link) de la zona de 5V (ESP32 y LEDs IR).
+
+2. 2_tapa_ventilada_triangular.stl
+   - Tapa superior (160 x 160 x 3 mm) con 12 rejillas de ventilación
+     térmica sobre la fuente Hi-Link y el Relé, y 3 agujeros en las
+     esquinas para tornillos M3 x 12 mm.
+
+3. 3_rotulas_orientables_leds_ir.stl
+   - Par de esferas orientables (Ø 16 mm) con agujero central de 5.2 mm
+     para los 2 LEDs emisores IR de 5 mm y ranura lateral en "C" de
+     2.8 mm para pasar el cable ya soldado sin tener que desoldar nada.
+   - Una vez puesto cada LED en su bolita, las 2 bolitas se encastran a
+     presión en las 2 ventanas laterales del frente diagonal de la caja
+     para poder apuntar un LED al Aire Acondicionado y el otro al
+     Proyector. En la ventana del medio asoma el Receptor IR (KY-022).
+
+4. carcasa_triangular.scad
+   - Archivo de diseño paramétrico original (OpenSCAD).
+
+5. visor_3d_interactivo.html
+   - Visor 3D interactivo (abrir con doble clic en cualquier navegador)
+     para ver dónde se ubica cada placa electrónica adentro de la caja.
+
+PARÁMETROS RECOMENDADOS PARA EL LAMINADOR (Cura / PrusaSlicer / Bambu):
+----------------------------------------------------------------------
+- Material recomendado: PETG o PLA+
+- Altura de capa:       0.20 mm
+- Paredes / Perímetros: 3 o 4 perímetros (1.2 a 1.6 mm)
+- Relleno (Infill):     20% (Giroide o Cúbico)
+- Soportes:             NO (Imprimir las 3 piezas apoyadas planas en
+                        la cama sin soportes)
+- Tamaño de cama:       Entra en cualquier impresora estándar (220x220 mm)
+======================================================================
+

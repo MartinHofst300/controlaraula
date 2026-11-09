@@ -1773,3 +1773,359 @@ input:focus, select:focus, textarea:focus {
     color: var(--text-gold);
     border-color: rgba(205, 191, 106, 0.3);
 }
+
+/* --------------------------------------------------------------------------
+   14. PWA (INSTALACIÓN DE APP Y MODO STANDALONE)
+   -------------------------------------------------------------------------- */
+body {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-instalar-pwa {
+    background: var(--color-primary-bg);
+    color: var(--text-gold);
+    border: 1px solid var(--border-highlight);
+    font-weight: 600;
+}
+
+.btn-instalar-pwa:hover {
+    background: var(--color-primary);
+    color: var(--text-inverse);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-glow);
+}
+
+.btn-instalar-pwa.pwa-nativo-listo {
+    animation: pulsoPwa 2.8s infinite ease-in-out;
+}
+
+@keyframes pulsoPwa {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(205, 191, 106, 0.25);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(205, 191, 106, 0);
+    }
+}
+
+.pwa-modal-panel {
+    max-width: 480px;
+}
+
+.pwa-pasos-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pwa-paso {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-size: calc(13px * var(--ui-scale));
+    color: var(--text-primary);
+    line-height: 1.45;
+}
+
+.pwa-paso-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--color-primary-bg);
+    border: 1px solid var(--border-highlight);
+    color: var(--text-gold);
+    font-weight: 700;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   15. DISEÑO RESPONSIVE INTEGRAL (TABLETS Y CELULARES)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    .panel-contenedor {
+        padding: 12px 12px 28px;
+    }
+
+    /* Cabecera adaptable */
+    .cabecera-principal {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px 16px;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .marca-titulo {
+        width: 100%;
+    }
+
+    .cabecera-acciones {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 8px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .selector-aula-contenedor,
+    .espacio-fijo-badge {
+        flex: 1 1 100%;
+        justify-content: space-between;
+    }
+
+    .selector-aula {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .usuario-badge {
+        flex: 1 1 auto;
+    }
+
+    /* Barra de escenas rápidas */
+    .barra-escenas {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px 16px;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .escenas-botones {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        width: 100%;
+    }
+
+    .btn-escena {
+        justify-content: center;
+        padding: 10px 8px;
+        text-align: center;
+    }
+
+    /* Grilla de tarjetas de control a 1 columna cómoda para táctil */
+    .grilla-controles {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .tarjeta-control {
+        padding: 18px 16px;
+    }
+
+    .control-botones .btn {
+        min-height: 46px;
+        font-size: calc(14px * var(--ui-scale));
+    }
+
+    /* Administración y Telemetría */
+    .admin-toggle-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px 16px;
+    }
+
+    .admin-toggle-Status {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .admin-panel-cuerpo {
+        padding: 0 14px 16px;
+    }
+
+    .barra-telemetria {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 12px;
+        gap: 12px;
+    }
+
+    /* Pestañas deslizable horizontalmente en táctil */
+    .tabs-navegacion {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+    }
+
+    .tabs-navegacion::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tab-btn {
+        flex: 0 0 auto;
+        padding: 10px 14px;
+    }
+
+    /* Modales estilo Bottom-Sheet en móviles */
+    .modal-overlay {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .modal-panel {
+        max-width: 100%;
+        width: 100%;
+        max-height: 92dvh;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        border-bottom: none;
+    }
+
+    .modal-header {
+        padding: 16px 18px;
+    }
+
+    .modal-tabs-nav {
+        display: flex;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .modal-tabs-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .modal-tab-btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding: 12px 14px;
+    }
+
+    .modal-body {
+        padding: 16px 18px;
+    }
+
+    .modal-footer {
+        padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .marca-icono {
+        width: 38px;
+        height: 38px;
+    }
+
+    .marca-info h1 {
+        font-size: calc(16px * var(--ui-scale));
+    }
+
+    .marca-info span {
+        font-size: calc(11.5px * var(--ui-scale));
+    }
+
+    .cabecera-acciones .btn-pequeno {
+        flex: 1 1 auto;
+        justify-content: center;
+        min-height: 38px;
+    }
+
+    /* Escenas en 1 columna o 2+1 para celulares angostos */
+    .escenas-botones {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-escena {
+        justify-content: flex-start;
+        padding: 11px 14px;
+    }
+
+    /* Cabecera de cada tarjeta de control */
+    .control-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .control-titulo-grupo {
+        flex: 1 1 calc(100% - 90px);
+    }
+
+    .pastilla-estado {
+        margin-left: auto;
+    }
+
+    /* Termostato adaptado a pantallas chicas */
+    .termostato-display {
+        padding: 10px 12px;
+    }
+
+    .temp-numero {
+        font-size: calc(32px * var(--ui-scale));
+    }
+
+    .btn-temp {
+        width: 42px;
+        height: 42px;
+    }
+
+    .grilla-botones-opciones.cols-3,
+    .grilla-botones-opciones.cols-2 {
+        gap: 6px;
+    }
+
+    .btn-opcion {
+        padding: 9px 6px;
+        font-size: calc(11.5px * var(--ui-scale));
+    }
+
+    .proyector-volumen-pills {
+        flex-wrap: wrap;
+    }
+
+    .btn-vol-pill {
+        flex: 1 1 calc(50% - 6px);
+        padding: 6px 8px;
+    }
+
+    /* Telemetría en 1 columna en pantallas muy angostas */
+    .barra-telemetria {
+        grid-template-columns: 1fr;
+    }
+
+    /* Opciones del modal de configuración */
+    .pref-opciones-grid.cols-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .color-custom-fila {
+        flex-wrap: wrap;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+    }
+
+    /* Login adaptado a celulares */
+    .login-body {
+        padding: 14px;
+    }
+
+    .login-card {
+        padding: 24px 18px;
+    }
+}
+
