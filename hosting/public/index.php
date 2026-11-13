@@ -185,15 +185,6 @@ if ($rol === 'aula') {
                 </a>
                 <?php endif; ?>
 
-                <button type="button" data-btn-instalar-pwa class="btn btn-secundario btn-pequeno btn-instalar-pwa" title="Instalar aplicación en tu celular o PC">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <span>Instalar App</span>
-                </button>
-
                 <button type="button" id="btnAbrirConfig" class="btn btn-secundario btn-pequeno" title="Centro de Configuración, Preferencias y Perfil">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="3"></circle>
@@ -275,9 +266,9 @@ if ($rol === 'aula') {
         <!-- Grilla de Controles Principales del Aula -->
         <main class="grilla-controles">
             <!-- ===============================================================
-                 TARJETA DESTACADA: AIRE ACONDICIONADO (TERMOSTATO INTERACTIVO)
+                 TARJETA 1: AIRE ACONDICIONADO
                  =============================================================== -->
-            <article class="tarjeta-control tarjeta-aire-destacada">
+            <article class="tarjeta-control">
                 <div class="control-header">
                     <div class="control-icono-titulo">
                         <div class="icono-dispositivo" id="iconoAire">
@@ -364,7 +355,7 @@ if ($rol === 'aula') {
             <!-- ===============================================================
                  TARJETA 3: PROYECTOR MULTIMEDIA AVANZADO
                  =============================================================== -->
-            <article class="tarjeta-control">
+            <article class="tarjeta-control tarjeta-proyector-destacada">
                 <div class="control-header">
                     <div class="control-icono-titulo">
                         <div class="icono-dispositivo" id="iconoProyector">
@@ -1290,8 +1281,7 @@ if ($rol === 'aula') {
         </div>
     </div>
 
-    <!-- Script Principal del Panel y PWA -->
+    <!-- Script Principal del Panel -->
     <script src="assets/js/panel.js"></script>
-    <script src="assets/js/pwa.js"></script>
 </body>
 </html>

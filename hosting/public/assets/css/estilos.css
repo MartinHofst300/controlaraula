@@ -609,10 +609,12 @@ body {
 
 @media (min-width: 920px) {
     .grilla-controles {
-        grid-template-columns: 1.35fr 1fr;
+        grid-template-columns: 1fr 1.25fr;
+        align-items: start;
     }
-    .tarjeta-aire-destacada {
-        grid-row: span 2;
+    .tarjeta-proyector-destacada {
+        grid-column: 2;
+        grid-row: 1 / span 2;
     }
 }
 
