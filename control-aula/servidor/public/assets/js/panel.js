@@ -221,12 +221,28 @@
         densidad: 'comoda',       // 'comoda' | 'compacta'
         altoContraste: false,
         reducirAnimaciones: false,
+        unidadTemp: 'C',          // 'C' | 'F'
         prefAireTemp: 24,
         prefAireModo: 'frio',
         confirmarApagado: true,
         sonidoBeep: true,
         intervaloSync: 3000       // 3000 | 5000 | 10000
     };
+
+    function formatearTemperatura(tempC) {
+        const c = parseInt(tempC, 10) || 24;
+        const unidad = (prefsActuales && prefsActuales.unidadTemp === 'F') ? 'F' : 'C';
+        if (unidad === 'F') {
+            const f = Math.round((c * 9) / 5 + 32);
+            return `${f}°F`;
+        }
+        return `${c}°C`;
+    }
+
+    function limpiarNombreAula(nombre) {
+        if (!nombre) return 'Aula 101';
+        return String(nombre).replace(/\s*-\s*General/i, '').trim();
+    }
 
     function obtenerPreferencias() {
         try {
@@ -237,6 +253,8 @@
 
             let modoPref = guardado.prefAireModo || PREFS_DEFAULT.prefAireModo;
             if (modoPref === 'deshumidificador') modoPref = 'seco';
+
+            const unidadRaw = String(guardado.unidadTemp || PREFS_DEFAULT.unidadTemp).toUpperCase();
 
             return {
                 bs5: true,
@@ -250,6 +268,7 @@
                 densidad: ['comoda', 'compacta'].includes(guardado.densidad) ? guardado.densidad : PREFS_DEFAULT.densidad,
                 altoContraste: Boolean(guardado.altoContraste),
                 reducirAnimaciones: Boolean(guardado.reducirAnimaciones),
+                unidadTemp: ['C', 'F'].includes(unidadRaw) ? unidadRaw : PREFS_DEFAULT.unidadTemp,
                 prefAireTemp: Math.max(16, Math.min(30, parseInt(guardado.prefAireTemp, 10) || PREFS_DEFAULT.prefAireTemp)),
                 prefAireModo: ['frio', 'calor', 'auto', 'ventilacion', 'seco'].includes(modoPref)
                     ? modoPref : PREFS_DEFAULT.prefAireModo,
@@ -346,6 +365,9 @@
         document.querySelectorAll('[data-pref-fuente]').forEach(btn => {
             btn.classList.toggle('activo', btn.getAttribute('data-pref-fuente') === prefs.fuente);
         });
+        document.querySelectorAll('[data-pref-unidad-temp]').forEach(btn => {
+            btn.classList.toggle('activo', btn.getAttribute('data-pref-unidad-temp') === (prefs.unidadTemp || 'C'));
+        });
         document.querySelectorAll('[data-pref-densidad]').forEach(btn => {
             btn.classList.toggle('activo', btn.getAttribute('data-pref-densidad') === prefs.densidad);
         });
@@ -361,7 +383,7 @@
         if (chkSonidoBeep) chkSonidoBeep.checked = prefs.sonidoBeep;
         if (prefIntervaloSync) prefIntervaloSync.value = String(prefs.intervaloSync);
 
-        // Actualizar texto descriptivo de la escena "Iniciar Clase"
+        // Actualizar texto descriptivo de la escena "Iniciar Clase" y pastilla de Aire
         if (descIniciarClase) {
             const mapaModos = {
                 frio: 'Frío',
@@ -371,7 +393,17 @@
                 seco: 'Seco / Dry',
                 deshumidificador: 'Seco / Dry'
             };
-            descIniciarClase.textContent = `Enciende luces y aire en ${prefs.prefAireTemp}°C (${mapaModos[prefs.prefAireModo] || 'Frío'})`;
+            const tempTxt = (prefs.unidadTemp === 'F')
+                ? `${Math.round((prefs.prefAireTemp * 9) / 5 + 32)}°F`
+                : `${prefs.prefAireTemp}°C`;
+            descIniciarClase.textContent = `Enciende luces y aire en ${tempTxt} (${mapaModos[prefs.prefAireModo] || 'Frío'})`;
+        }
+
+        if (typeof actualizarVistaTermostato === 'function') {
+            actualizarVistaTermostato();
+        }
+        if (esAdmin && Array.isArray(listaAulas) && listaAulas.length > 0 && typeof renderizarTableroAulas === 'function') {
+            renderizarTableroAulas(listaAulas);
         }
 
         if (reiniciarTimer) {
@@ -463,6 +495,13 @@
     document.querySelectorAll('[data-pref-fuente]').forEach(btn => {
         btn.addEventListener('click', () => {
             prefsActuales.fuente = btn.getAttribute('data-pref-fuente');
+            aplicarPreferencias(prefsActuales);
+        });
+    });
+
+    document.querySelectorAll('[data-pref-unidad-temp]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            prefsActuales.unidadTemp = btn.getAttribute('data-pref-unidad-temp') || 'C';
             aplicarPreferencias(prefsActuales);
         });
     });
@@ -708,7 +747,7 @@
 
         if (pastillaAire) {
             pastillaAire.className = `estado-pastilla ${estadoAire.encendido ? 'on' : 'off'}`;
-            pastillaAire.textContent = estadoAire.encendido ? `ENCENDIDO · ${estadoAire.temp}°C` : 'APAGADO';
+            pastillaAire.textContent = estadoAire.encendido ? `ENCENDIDO · ${formatearTemperatura(estadoAire.temp)}` : 'APAGADO';
         }
 
         if (iconoAire) {
@@ -720,7 +759,7 @@
         }
 
         if (aireTempValor) {
-            aireTempValor.textContent = `${estadoAire.temp}°C`;
+            aireTempValor.textContent = formatearTemperatura(estadoAire.temp);
         }
 
         if (aireEstadoSub) {
@@ -848,16 +887,15 @@
         timerPolling = setInterval(consultarEstado, intervalo);
     }
 
-    function actualizarIndicadorConexion(online, segundos, nombreAula = '') {
+    function actualizarIndicadorConexion(online, segundos) {
         if (!badgeConexion || !textoConexion) return;
-        const prefijo = nombreAula ? `${nombreAula.toUpperCase()} · ` : '';
         if (online) {
             badgeConexion.className = 'badge-conexion online';
-            textoConexion.textContent = `${prefijo}ONLINE`;
+            textoConexion.textContent = 'ONLINE';
             if (telContacto) telContacto.textContent = segundos !== null ? `hace ${segundos}s` : 'activo';
         } else {
             badgeConexion.className = 'badge-conexion offline';
-            textoConexion.textContent = `${prefijo}OFFLINE`;
+            textoConexion.textContent = 'OFFLINE';
             if (telContacto) telContacto.textContent = segundos !== null ? `hace ${segundos}s` : 'sin señal';
         }
     }
@@ -1110,8 +1148,12 @@
             if (data.ok) {
                 if (escenasFeedback) {
                     escenasFeedback.textContent = data.mensaje;
+                    escenasFeedback.style.display = 'inline-block';
                     setTimeout(() => {
-                        if (escenasFeedback) escenasFeedback.textContent = '';
+                        if (escenasFeedback) {
+                            escenasFeedback.textContent = '';
+                            escenasFeedback.style.display = 'none';
+                        }
                     }, 4000);
                 }
                 await consultarEstado();
@@ -1180,7 +1222,7 @@
                     listaAulas.forEach(a => {
                         const opt = document.createElement('option');
                         opt.value = a.id;
-                        opt.textContent = `[${a.tipo || 'Aula'}] ${a.nombre} ${a.ubicacion ? '(' + a.ubicacion + ')' : ''}`;
+                        opt.textContent = limpiarNombreAula(a.nombre);
                         selectAulaHeader.appendChild(opt);
                     });
 
@@ -1315,7 +1357,7 @@
                 : '<span class="badge text-bg-secondary">Luces OFF</span>';
 
             const aireBadge = est.aire_encendido === 1
-                ? `<span class="badge text-bg-info">Aire ON · ${est.aire_temp}°C (${(est.aire_modo || 'frio').toUpperCase()})</span>`
+                ? `<span class="badge text-bg-info">Aire ON · ${formatearTemperatura(est.aire_temp)} (${(est.aire_modo || 'frio').toUpperCase()})</span>`
                 : '<span class="badge text-bg-secondary">Aire OFF</span>';
 
             const proyBadge = est.proyector_encendido === 1

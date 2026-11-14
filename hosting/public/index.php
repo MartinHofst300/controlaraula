@@ -105,15 +105,15 @@ if ($rol === 'aula') {
 </head>
 <body class="bg-body-tertiary">
     <div class="container py-3 panel-contenedor">
-        <!-- Cabecera Principal (Navbar Bootstrap 5) -->
-        <header class="navbar navbar-expand-lg bg-body border rounded-3 shadow-sm px-3 py-2 mb-3 cabecera-principal">
+        <!-- Cabecera Principal -->
+        <header class="bg-body border rounded-3 shadow-sm px-3 py-2 mb-3 cabecera-principal">
             <div class="marca-titulo d-flex align-items-center gap-2">
                 <div class="marca-icono bg-primary text-white rounded-2 d-flex align-items-center justify-content-center">
                     <i class="bi bi-hdd-network fs-5"></i>
                 </div>
                 <div class="marca-info">
                     <h1 class="h5 fw-bold mb-0">Control de Aula</h1>
-                    <span class="text-body-secondary small">Climatización, Iluminación y Proyección (ESP32)</span>
+                    <span class="text-body-secondary small">Climatización, Iluminación y Proyección</span>
                 </div>
             </div>
 
@@ -132,64 +132,48 @@ if ($rol === 'aula') {
                 <!-- Indicador Fijo del Salón Físico (Cuenta de Espacio) -->
                 <?php
                 $tipoEsp = $aulaFija['tipo'] ?? 'Aula';
-                $nomEsp = $aulaFija['nombre'] ?? 'Aula 101';
-                $ubicEsp = $aulaFija['ubicacion'] ?? '';
+                $nomEspRaw = $aulaFija['nombre'] ?? 'Aula 101';
+                $nomEsp = trim(str_replace('- General', '', $nomEspRaw));
                 ?>
-                <div class="espacio-fijo-badge badge text-bg-light border px-2 py-1 d-inline-flex align-items-center gap-1" title="Espacio físico asignado a esta terminal">
+                <div class="espacio-fijo-badge badge text-bg-light border px-3 py-2 d-inline-flex align-items-center gap-2" title="Espacio físico asignado a esta terminal">
                     <?php if ($tipoEsp === 'Laboratorio'): ?>
-                    <i class="bi bi-Cpu text-primary"></i>
+                    <i class="bi bi-cpu text-primary"></i>
                     <?php elseif ($tipoEsp === 'Taller'): ?>
                     <i class="bi bi-tools text-primary"></i>
                     <?php else: ?>
                     <i class="bi bi-house-door text-primary"></i>
                     <?php endif; ?>
-                    <span class="tipo-tag badge text-bg-primary"><?php echo htmlspecialchars($tipoEsp, ENT_QUOTES, 'UTF-8'); ?></span>
                     <span class="fw-semibold"><?php echo htmlspecialchars($nomEsp, ENT_QUOTES, 'UTF-8'); ?></span>
-                    <?php if (!empty($ubicEsp)): ?>
-                    <span class="ubicacion-texto text-body-secondary">(<?php echo htmlspecialchars($ubicEsp, ENT_QUOTES, 'UTF-8'); ?>)</span>
-                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
 
-                <div class="usuario-badge badge text-bg-light border px-2 py-1 d-inline-flex align-items-center gap-1" title="Usuario con sesión iniciada">
-                    <i class="bi bi-person-circle text-secondary"></i>
-                    <span id="headerNombreUsuario" class="fw-medium"><?php echo htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8'); ?></span>
-                    <span class="rol-tag badge text-bg-secondary"><?php echo $esAdmin ? 'Admin' : 'Espacio'; ?></span>
-                </div>
-
                 <div id="badgeConexion" class="badge-conexion offline">
                     <span class="pulso-punto"></span>
-                    <span id="textoConexion">AULA OFFLINE</span>
+                    <span id="textoConexion">OFFLINE</span>
                 </div>
 
                 <?php if ($esAdmin): ?>
-                <a href="simulador.php" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno" title="Simular ESP32 sin hardware">
+                <a href="simulador.php" class="btn btn-outline-secondary btn-sm px-3 fw-medium" title="Simular ESP32 sin hardware">
                     <i class="bi bi-cpu"></i>
                     <span>Simulador</span>
                 </a>
                 <?php endif; ?>
 
-                <button type="button" id="btnAbrirConfig" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno" title="Centro de Configuración, Preferencias y Perfil">
+                <button type="button" id="btnAbrirConfig" class="btn btn-outline-primary btn-sm px-3 fw-medium btn-config-header" title="Centro de Configuración y Perfil">
                     <i class="bi bi-gear"></i>
                     <span>Configuración</span>
                 </button>
 
-                <a href="logout.php" class="btn btn-outline-danger btn-sm btn-secundario btn-pequeno" title="Cerrar sesión">
+                <a href="logout.php" class="btn btn-outline-danger btn-sm px-3 fw-medium" title="Cerrar sesión">
                     <i class="bi bi-box-arrow-right"></i>
                     <span>Salir</span>
                 </a>
             </div>
         </header>
 
-        <!-- Barra Superior de Escenas Rápidas del Aula (Acciones Combinadas de 1 Clic) -->
+        <!-- Barra Superior de Escenas Rápidas del Aula -->
         <section class="escenas-seccion mb-3" aria-label="Escenas rápidas del aula">
-            <div class="escenas-header d-flex align-items-center justify-content-between mb-2">
-                <div class="escenas-titulo text-body-secondary fw-bold small text-uppercase d-flex align-items-center gap-1">
-                    <i class="bi bi-lightning-charge-fill text-primary"></i>
-                    <span>Escenas Rápidas de Aula (1 Clic)</span>
-                </div>
-                <span id="escenasFeedback" class="escenas-feedback badge text-bg-success"></span>
-            </div>
+            <span id="escenasFeedback" class="escenas-feedback badge text-bg-success mb-2" style="display:none;"></span>
             <div class="barra-escenas">
                 <button type="button" class="btn-escena card shadow-sm" data-escena="modo_proyeccion">
                     <div class="escena-icono text-primary">
@@ -207,7 +191,7 @@ if ($rol === 'aula') {
                     </div>
                     <div class="escena-info">
                         <strong>Iniciar Clase</strong>
-                        <span id="descIniciarClase">Enciende luces y climatización en tu preset preferido</span>
+                        <span id="descIniciarClase">Enciende luces y aire en 24°C (Frío)</span>
                     </div>
                 </button>
 
@@ -273,7 +257,7 @@ if ($rol === 'aula') {
                         </div>
                         <div class="control-textos">
                             <h2 class="h6 fw-bold mb-0">Iluminación</h2>
-                            <p class="mb-0 text-body-secondary small">Circuito general de luminarias del aula (Relé 220V)</p>
+                            <p class="mb-0 text-body-secondary small">Circuito general de luminarias del aula</p>
                         </div>
                     </div>
                     <span id="pastillaLuces" class="estado-pastilla off">APAGADAS</span>
@@ -303,10 +287,6 @@ if ($rol === 'aula') {
                         <div class="control-textos">
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <h2 class="h6 fw-bold mb-0">Proyector Multimedia</h2>
-                                <span class="hw-chip hw-chip-epson badge rounded-pill" id="hwChipProyector" title="Proyector Epson con protocolo NEC 38kHz y doble pulso de apagado">
-                                    <i class="bi bi-display"></i>
-                                    <span id="hwChipProyectorTexto">Epson · Protocolo NEC</span>
-                                </span>
                             </div>
                             <p class="mb-0 text-body-secondary small">Alimentación, fuente de video y funciones de clase</p>
                             <span id="colaProyectorInfo" class="text-primary fw-semibold" style="display:none; font-size:11px; margin-top:2px;"></span>
@@ -842,15 +822,11 @@ if ($rol === 'aula') {
                 <button type="button" id="btnCerrarConfig" class="btn-close modal-cerrar" aria-label="Cerrar"></button>
             </div>
 
-            <!-- Navegación de las 3 Pestañas del Modal -->
+            <!-- Navegación de las 2 Pestañas del Modal -->
             <div class="modal-tabs-nav" role="tablist">
                 <button type="button" class="modal-tab-btn activo" data-cfg-tab="cfg-tab-apariencia">
                     <i class="bi bi-palette me-1"></i>
                     <span>Apariencia y Accesibilidad</span>
-                </button>
-                <button type="button" class="modal-tab-btn" data-cfg-tab="cfg-tab-aula">
-                    <i class="bi bi-sliders2 me-1"></i>
-                    <span>Preferencias de Aula</span>
                 </button>
                 <button type="button" class="modal-tab-btn" data-cfg-tab="cfg-tab-perfil">
                     <i class="bi bi-person-gear me-1"></i>
@@ -866,7 +842,7 @@ if ($rol === 'aula') {
                     <!-- 1. Tema de Fondo -->
                     <div class="pref-grupo">
                         <div class="pref-grupo-titulo">
-                            <span>Tema de Fondo (Bootstrap 5)</span>
+                            <span>Tema de Fondo</span>
                         </div>
                         <div class="pref-opciones-grid cols-3">
                             <button type="button" class="pref-btn" data-pref-tema="claro">
@@ -892,7 +868,7 @@ if ($rol === 'aula') {
                         <div class="pref-opciones-grid cols-3">
                             <button type="button" class="pref-btn" data-pref-acento="azul">
                                 <span class="color-circulo" style="background:#0d6efd;"></span>
-                                <span>Azul Bootstrap</span>
+                                <span>Azul</span>
                             </button>
                             <button type="button" class="pref-btn" data-pref-acento="esmeralda">
                                 <span class="color-circulo" style="background:#198754;"></span>
@@ -931,7 +907,7 @@ if ($rol === 'aula') {
                         </div>
                         <div class="pref-opciones-grid cols-3">
                             <button type="button" class="pref-btn" data-pref-fuente="sans">
-                                <span>Bootstrap Sans</span>
+                                <span>Sans</span>
                             </button>
                             <button type="button" class="pref-btn" data-pref-fuente="serif">
                                 <span>Clásica / Serif</span>
@@ -942,7 +918,24 @@ if ($rol === 'aula') {
                         </div>
                     </div>
 
-                    <!-- 4. Escala de Texto y Botones (Slider 85% a 130%) -->
+                    <!-- 4. Unidad de Temperatura (°C / °F) -->
+                    <div class="pref-grupo">
+                        <div class="pref-grupo-titulo">
+                            <span>Unidad de Temperatura</span>
+                        </div>
+                        <div class="pref-opciones-grid">
+                            <button type="button" class="pref-btn" data-pref-unidad-temp="C">
+                                <i class="bi bi-thermometer-half"></i>
+                                <span>Grados Celsius (°C)</span>
+                            </button>
+                            <button type="button" class="pref-btn" data-pref-unidad-temp="F">
+                                <i class="bi bi-thermometer-sun"></i>
+                                <span>Grados Fahrenheit (°F)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 5. Escala de Texto y Botones (Slider 85% a 130%) -->
                     <div class="pref-grupo">
                         <div class="pref-grupo-titulo">
                             <span>Escala de Texto y Botones</span>
@@ -955,7 +948,7 @@ if ($rol === 'aula') {
                         </div>
                     </div>
 
-                    <!-- 5. Densidad de las Tarjetas -->
+                    <!-- 6. Densidad de las Tarjetas -->
                     <div class="pref-grupo">
                         <div class="pref-grupo-titulo">
                             <span>Densidad de las Tarjetas</span>
@@ -970,7 +963,7 @@ if ($rol === 'aula') {
                         </div>
                     </div>
 
-                    <!-- 6. Accesibilidad -->
+                    <!-- 7. Accesibilidad -->
                     <div class="pref-grupo mb-0">
                         <div class="pref-grupo-titulo">
                             <span>Accesibilidad Visual</span>
@@ -993,79 +986,7 @@ if ($rol === 'aula') {
                 </div>
 
                 <!-- ===========================================================
-                     PESTAÑA 2: PREFERENCIAS DE AULA
-                     =========================================================== -->
-                <div id="cfg-tab-aula" class="cfg-tab-pane">
-                    <!-- 1. Preset Inicial de Aire Acondicionado -->
-                    <div class="pref-grupo">
-                        <div class="pref-grupo-titulo">
-                            <span>Preset Inicial de Aire Acondicionado</span>
-                        </div>
-                        <p class="text-body-secondary small mb-2">
-                            Elegí en qué temperatura y modo querés que arranque el aire al tocar <strong>"Encender Aire"</strong> o <strong>"Iniciar Clase"</strong>.
-                        </p>
-                        <div class="pref-opciones-grid">
-                            <div class="campo-grupo mb-0">
-                                <label for="prefAireTemp" class="form-label">Temperatura Preferida</label>
-                                <select id="prefAireTemp" class="form-select">
-                                    <?php for ($t = 16; $t <= 30; $t++): ?>
-                                    <option value="<?php echo $t; ?>" <?php echo ($t === 24) ? 'selected' : ''; ?>><?php echo $t; ?>°C</option>
-                                    <?php endfor; ?>
-                                </select>
-                            </div>
-                            <div class="campo-grupo mb-0">
-                                <label for="prefAireModo" class="form-label">Modo Preferido</label>
-                                <select id="prefAireModo" class="form-select">
-                                    <option value="frio">Frío (Cool)</option>
-                                    <option value="calor">Calor (Heat)</option>
-                                    <option value="auto">Automático (Auto)</option>
-                                    <option value="ventilacion">Ventilación (Fan)</option>
-                                    <option value="seco">Deshumidificador / Seco (Dry)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 2. Confirmación de Seguridad y Sonido -->
-                    <div class="pref-grupo">
-                        <div class="pref-grupo-titulo">
-                            <span>Comportamiento de los Controles</span>
-                        </div>
-                        <label class="switch-fila" for="chkConfirmarApagado">
-                            <div>
-                                <strong>Confirmación de Seguridad antes de Apagar</strong>
-                                <small>Pedir confirmación antes de apagar el proyector o ejecutar "Cerrar Aula"</small>
-                            </div>
-                            <input type="checkbox" id="chkConfirmarApagado" class="form-check-input switch-check" checked>
-                        </label>
-
-                        <label class="switch-fila" for="chkSonidoBeep">
-                            <div>
-                                <strong>Sonido / Beep de Confirmación</strong>
-                                <small>Emitir un tono suave al pulsar botones del control remoto web</small>
-                            </div>
-                            <input type="checkbox" id="chkSonidoBeep" class="form-check-input switch-check" checked>
-                        </label>
-                    </div>
-
-                    <!-- 3. Frecuencia de Sincronización -->
-                    <div class="pref-grupo mb-0">
-                        <div class="pref-grupo-titulo">
-                            <span>Frecuencia de Sincronización del Panel</span>
-                        </div>
-                        <div class="campo-grupo mb-0">
-                            <label for="prefIntervaloSync" class="form-label">Intervalo de actualización automática</label>
-                            <select id="prefIntervaloSync" class="form-select">
-                                <option value="3000">Cada 3 segundos (Tiempo real rápido)</option>
-                                <option value="5000">Cada 5 segundos (Balanceado)</option>
-                                <option value="10000">Cada 10 segundos (Ahorro de datos)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===========================================================
-                     PESTAÑA 3: MI PERFIL Y SEGURIDAD
+                     PESTAÑA 2: MI PERFIL Y SEGURIDAD
                      =========================================================== -->
                 <div id="cfg-tab-perfil" class="cfg-tab-pane">
                     <div class="pref-grupo">

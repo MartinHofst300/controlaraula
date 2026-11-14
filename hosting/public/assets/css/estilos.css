@@ -910,7 +910,7 @@ html[data-theme="oscuro"] .hw-chip-epson {
 
 .modal-tabs-nav {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     background-color: var(--bg-subtle);
     border-bottom: 1px solid var(--border-subtle);
     padding: 6px 10px 0;

@@ -127,7 +127,7 @@ $csrfToken = obtenerTokenCSRF();
             <div class="card-header bg-primary text-white text-center py-3 border-0">
                 <i class="bi bi-building-gear fs-2 d-block mb-1"></i>
                 <h1 class="h5 fw-bold mb-0">Sistema de Control de Aula</h1>
-                <small class="opacity-75">Climatización, Iluminación y Proyección (ESP32)</small>
+                <small class="opacity-75">Climatización, Iluminación y Proyección</small>
             </div>
 
             <div class="card-body p-4">

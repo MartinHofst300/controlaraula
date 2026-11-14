@@ -94,6 +94,7 @@ function obtenerPreferenciasPorDefecto() {
         'densidad' => 'comoda',           // 'comoda' | 'compacta'
         'altoContraste' => false,
         'reducirAnimaciones' => false,
+        'unidadTemp' => 'C',              // 'C' | 'F'
         'prefAireTemp' => 24,             // 16 a 30
         'prefAireModo' => 'frio',         // 'frio' | 'calor' | 'ventilacion' | 'seco' | 'auto'
         'confirmarApagado' => true,
@@ -138,6 +139,9 @@ function sanitizarPreferenciasUsuario($entrada) {
     $altoContraste = isset($entrada['altoContraste']) ? (bool) $entrada['altoContraste'] : $def['altoContraste'];
     $reducirAnimaciones = isset($entrada['reducirAnimaciones']) ? (bool) $entrada['reducirAnimaciones'] : $def['reducirAnimaciones'];
 
+    $unidadTemp = isset($entrada['unidadTemp']) && in_array(strtoupper((string) $entrada['unidadTemp']), ['C', 'F'], true)
+        ? strtoupper((string) $entrada['unidadTemp']) : $def['unidadTemp'];
+
     $prefAireTemp = isset($entrada['prefAireTemp']) ? max(16, min(30, (int) $entrada['prefAireTemp'])) : $def['prefAireTemp'];
 
     $modoRaw = isset($entrada['prefAireModo']) ? strtolower(trim((string) $entrada['prefAireModo'])) : $def['prefAireModo'];
@@ -163,6 +167,7 @@ function sanitizarPreferenciasUsuario($entrada) {
         'densidad' => $densidad,
         'altoContraste' => $altoContraste,
         'reducirAnimaciones' => $reducirAnimaciones,
+        'unidadTemp' => $unidadTemp,
         'prefAireTemp' => $prefAireTemp,
         'prefAireModo' => $prefAireModo,
         'confirmarApagado' => $confirmarApagado,
@@ -503,7 +508,7 @@ function asegurarColumnasExtendidas($pdo) {
         $keyDefault1 = defined('API_KEY_ESP32') ? API_KEY_ESP32 : 'secreto_esp32_aula_1234';
         $stmtInsAulas = $pdo->prepare("
             INSERT INTO `aulas` (`id`, `nombre`, `tipo`, `ubicacion`, `api_key_esp32`, `activa`, `aire_temp`, `aire_modo`, `aire_fan`, `proyector_fuente`, `proyector_volumen`) VALUES
-            (1, 'Aula 101 - General', 'Aula', 'Planta Baja', :key1, 1, 24, 'frio', 'auto', 'hdmi1', 50),
+            (1, 'Aula 101', 'Aula', 'Planta Baja', :key1, 1, 24, 'frio', 'auto', 'hdmi1', 50),
             (2, 'Laboratorio 1 - Informática', 'Laboratorio', 'Piso 1 - Ala Norte', 'esp32_key_lab1_inform_5678', 1, 22, 'frio', 'auto', 'hdmi1', 60),
             (3, 'Taller de Electrónica', 'Taller', 'Piso 2 - Talleres', 'esp32_key_taller_elect_9012', 1, 24, 'frio', 'auto', 'vga', 40)
             ON DUPLICATE KEY UPDATE
@@ -511,6 +516,7 @@ function asegurarColumnasExtendidas($pdo) {
               `ubicacion` = VALUES(`ubicacion`);
         ");
         $stmtInsAulas->execute([':key1' => $keyDefault1]);
+        $pdo->exec("UPDATE `aulas` SET `nombre` = 'Aula 101' WHERE `id` = 1 AND `nombre` LIKE 'Aula 101 - General%'");
 
         // 3. Verificar columnas de estado_actual
         $colsEstado = $pdo->query("SHOW COLUMNS FROM `estado_actual`")->fetchAll(PDO::FETCH_COLUMN);
@@ -587,7 +593,7 @@ function asegurarColumnasExtendidas($pdo) {
         // Cuentas por espacio y admin por defecto
         $cuentasDefecto = [
             ['usuario' => 'admin',   'password' => 'admin123',  'nombre' => 'Administrador General',       'rol' => 'admin', 'aula_id' => null, 'perm' => 'todas'],
-            ['usuario' => 'aula101', 'password' => 'aula123',   'nombre' => 'Aula 101 - General',          'rol' => 'aula',  'aula_id' => 1,    'perm' => '[1]'],
+            ['usuario' => 'aula101', 'password' => 'aula123',   'nombre' => 'Aula 101',                    'rol' => 'aula',  'aula_id' => 1,    'perm' => '[1]'],
             ['usuario' => 'lab1',    'password' => 'lab123',    'nombre' => 'Laboratorio 1 - Informática', 'rol' => 'aula',  'aula_id' => 2,    'perm' => '[2]'],
             ['usuario' => 'taller1', 'password' => 'taller123', 'nombre' => 'Taller de Electrónica',       'rol' => 'aula',  'aula_id' => 3,    'perm' => '[3]']
         ];
