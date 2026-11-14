@@ -85,9 +85,10 @@ function expirarComandosViejos($pdo) {
  */
 function obtenerPreferenciasPorDefecto() {
     return [
-        'tema' => 'oscuro',               // 'oscuro' | 'claro' | 'auto'
-        'acento' => 'dorado',             // 'dorado' | 'azul' | 'esmeralda' | 'violeta' | 'coral' | 'cian' | 'custom'
-        'colorCustom' => '#897c37',
+        'bs5' => true,
+        'tema' => 'claro',                // 'claro' | 'oscuro' | 'auto'
+        'acento' => 'azul',               // 'azul' | 'dorado' | 'esmeralda' | 'violeta' | 'coral' | 'cian' | 'custom'
+        'colorCustom' => '#0d6efd',
         'fuente' => 'sans',               // 'sans' | 'serif' | 'mono'
         'escalaPct' => 100,               // 85 a 130
         'densidad' => 'comoda',           // 'comoda' | 'compacta'
@@ -108,6 +109,13 @@ function sanitizarPreferenciasUsuario($entrada) {
     $def = obtenerPreferenciasPorDefecto();
     if (!is_array($entrada)) {
         return $def;
+    }
+
+    // Si es una configuración previa a la migración a Bootstrap 5, usar tema claro y azul por defecto
+    if (empty($entrada['bs5'])) {
+        $entrada['tema'] = 'claro';
+        $entrada['acento'] = 'azul';
+        $entrada['colorCustom'] = '#0d6efd';
     }
 
     $tema = isset($entrada['tema']) && in_array($entrada['tema'], ['oscuro', 'claro', 'auto'], true)
@@ -146,6 +154,7 @@ function sanitizarPreferenciasUsuario($entrada) {
         ? (int) $entrada['intervaloSync'] : $def['intervaloSync'];
 
     return [
+        'bs5' => true,
         'tema' => $tema,
         'acento' => $acento,
         'colorCustom' => $colorCustom,

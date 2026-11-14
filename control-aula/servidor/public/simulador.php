@@ -34,23 +34,34 @@ $primeraKey = !empty($aulasSimulador[0]['api_key_esp32']) ? $aulasSimulador[0]['
 $csrfToken = obtenerTokenCSRF();
 ?>
 <!DOCTYPE html>
-<html lang="es" data-theme="oscuro" data-accent="dorado" data-font="sans" data-density="comoda" data-contrast="normal" data-motion="normal">
+<html lang="es" data-bs-theme="light" data-theme="claro" data-accent="azul" data-font="sans" data-density="comoda" data-contrast="normal" data-motion="normal">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1c1818">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Control Aula">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <title>Simulador ESP32 Multi-Aula | Control de Aula</title>
+    <!-- Bootstrap 5.3 CSS & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script>
         (function() {
             try {
-                var prefs = JSON.parse(localStorage.getItem('control_aula_prefs') || '{}');
+                var prefs = JSON.parse(localStorage.getItem('control_aula_prefs_bs5') || '{}');
                 var root = document.documentElement;
-                var tema = prefs.tema || 'oscuro';
+                var tema = prefs.tema || 'claro';
                 if (tema === 'auto') {
                     tema = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'claro' : 'oscuro';
                 }
                 root.setAttribute('data-theme', tema);
-                if (prefs.acento) root.setAttribute('data-accent', prefs.acento);
+                root.setAttribute('data-bs-theme', tema === 'claro' ? 'light' : 'dark');
+                root.setAttribute('data-accent', prefs.acento || 'azul');
                 if (prefs.fuente) root.setAttribute('data-font', prefs.fuente);
                 if (prefs.densidad) root.setAttribute('data-density', prefs.densidad);
                 if (prefs.altoContraste) root.setAttribute('data-contrast', 'alto');
@@ -68,31 +79,23 @@ $csrfToken = obtenerTokenCSRF();
         })();
     </script>
     <link rel="stylesheet" href="assets/css/estilos.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="panel-contenedor">
-        <header class="cabecera-principal">
-            <div class="marca-titulo">
-                <div class="marca-icono" style="background: rgba(16, 185, 129, 0.12); color: var(--color-success); border-color: rgba(16, 185, 129, 0.35);">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                    </svg>
+<body class="bg-body-tertiary">
+    <div class="container py-3 panel-contenedor">
+        <header class="navbar navbar-expand-lg bg-body border rounded-3 shadow-sm px-3 py-2 mb-3 cabecera-principal">
+            <div class="marca-titulo d-flex align-items-center gap-2">
+                <div class="marca-icono bg-success text-white rounded-2 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-cpu fs-5"></i>
                 </div>
                 <div class="marca-info">
-                    <h1>Simulador de ESP32 (Multi-Aula)</h1>
-                    <span>Validación de protocolo, colas aisladas por aula y telemetría</span>
+                    <h1 class="h5 fw-bold mb-0">Simulador de ESP32 (Multi-Aula)</h1>
+                    <span class="text-body-secondary small">Validación de protocolo, colas aisladas por aula y telemetría</span>
                 </div>
             </div>
 
             <div class="cabecera-acciones">
-                <a href="index.php" class="btn btn-secundario btn-pequeno">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="19" y1="12" x2="5" y2="12"></line>
-                        <polyline points="12 19 5 12 12 5"></polyline>
-                    </svg>
+                <a href="index.php" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno">
+                    <i class="bi bi-arrow-left"></i>
                     <span>Volver al Panel</span>
                 </a>
             </div>
@@ -100,15 +103,15 @@ $csrfToken = obtenerTokenCSRF();
 
         <div class="simulador-grid">
             <!-- Columna Izquierda: Acciones de Simulación -->
-            <div style="display:flex; flex-direction:column; gap:20px;">
+            <div class="d-flex flex-column gap-3">
                 <!-- Tarjeta 0: Selector de Aula a Simular -->
-                <div class="tarjeta-seccion" style="background:var(--bg-card); border:2px solid var(--border-highlight); padding:16px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div class="tarjeta-seccion card shadow-sm border-primary">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div>
-                            <h3 style="font-size:15px; margin:0; color:var(--text-gold);">Aula a Simular</h3>
-                            <p style="font-size:12px; color:var(--text-secondary); margin:2px 0 0 0;">Cada aula posee su propia cola de órdenes IR y su API Key única.</p>
+                            <h3 class="h6 fw-bold text-primary mb-0">Aula a Simular</h3>
+                            <p class="text-body-secondary small mb-0">Cada aula posee su propia cola de órdenes IR y su API Key única.</p>
                         </div>
-                        <select id="simuladorAulaSelect" style="background:var(--bg-input, #222); color:var(--text-primary, #fff); border:1px solid var(--border-subtle, #444); border-radius:6px; padding:6px 12px; font-weight:700; font-size:13px; cursor:pointer;">
+                        <select id="simuladorAulaSelect" class="form-select form-select-sm fw-semibold" style="width: auto;">
                             <?php foreach ($aulasSimulador as $as): ?>
                                 <option value="<?php echo $as['id']; ?>" data-key="<?php echo htmlspecialchars($as['api_key_esp32']); ?>">
                                     #<?php echo $as['id']; ?> - <?php echo htmlspecialchars($as['nombre']); ?>
@@ -116,125 +119,128 @@ $csrfToken = obtenerTokenCSRF();
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div style="margin-top:10px; font-size:12px; display:flex; align-items:center; gap:8px;">
-                        <span style="color:var(--text-secondary);">API Key simulada:</span>
-                        <code id="labelApiKeySimulada" style="background:rgba(0,0,0,0.35); padding:3px 8px; border-radius:4px; font-weight:700; color:var(--text-gold); font-size:11px;">
+                    <div class="mt-2 small d-flex align-items-center gap-2">
+                        <span class="text-body-secondary">API Key simulada:</span>
+                        <code id="labelApiKeySimulada" class="codigo-tag">
                             <?php echo htmlspecialchars($primeraKey); ?>
                         </code>
                     </div>
                 </div>
 
                 <!-- Tarjeta 1: Sincronización Unificada -->
-                <div class="tarjeta-seccion">
-                    <h3 style="font-size:16px; margin-bottom:8px;">1. Polling: Sincronización Unificada</h3>
-                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">
+                <div class="tarjeta-seccion card shadow-sm">
+                    <h3 class="h6 fw-bold mb-1">1. Polling: Sincronización Unificada</h3>
+                    <p class="text-body-secondary small mb-3">
                         Consulta <code>/api/esp32/sincronizar</code> con la API Key del aula seleccionada.
                     </p>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <button type="button" id="btnSimularSyncPost" class="btn btn-primario btn-bloque">
+                    <div class="d-flex flex-column gap-2">
+                        <button type="button" id="btnSimularSyncPost" class="btn btn-primary btn-primario btn-bloque">
+                            <i class="bi bi-arrow-repeat"></i>
                             <span>POST Sincronizar (Telemetría + Comandos)</span>
                         </button>
-                        <button type="button" id="btnSimularSync" class="btn btn-secundario btn-bloque">
+                        <button type="button" id="btnSimularSync" class="btn btn-outline-secondary btn-secundario btn-bloque">
                             <span>GET (Texto Plano Hardware)</span>
                         </button>
-                        <button type="button" id="btnSimularSyncJson" class="btn btn-secundario btn-bloque">
+                        <button type="button" id="btnSimularSyncJson" class="btn btn-outline-secondary btn-secundario btn-bloque">
                             <span>GET JSON Completo (?formato=json)</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Tarjeta 2: Encolar comandos de prueba -->
-                <div class="tarjeta-seccion">
-                    <h3 style="font-size:16px; margin-bottom:8px;">2. Encolar Comandos IR para esta Aula</h3>
-                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">
+                <div class="tarjeta-seccion card shadow-sm">
+                    <h3 class="h6 fw-bold mb-1">2. Encolar Comandos IR para esta Aula</h3>
+                    <p class="text-body-secondary small mb-3">
                         Encola órdenes reales en la tabla <code>comandos_ir</code> hacia el hardware real del salón (Star AC + Epson).
                     </p>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                        <button type="button" id="btnEncolarAireEco" class="btn btn-secundario btn-pequeno">
+                        <button type="button" id="btnEncolarAireEco" class="btn btn-outline-primary btn-sm btn-secundario btn-pequeno">
                             <span>Star AC: 24°C Frío Eco (0xB2BF40)</span>
                         </button>
-                        <button type="button" id="btnEncolarAireOff" class="btn btn-secundario btn-pequeno">
+                        <button type="button" id="btnEncolarAireOff" class="btn btn-outline-danger btn-sm btn-secundario btn-pequeno">
                             <span>Star AC: Apagar (0xB27BE0)</span>
                         </button>
-                        <button type="button" id="btnEncolarProyectorOn" class="btn btn-secundario btn-pequeno">
+                        <button type="button" id="btnEncolarProyectorOn" class="btn btn-outline-primary btn-sm btn-secundario btn-pequeno">
                             <span>Epson: Encender (0x8355906F)</span>
                         </button>
-                        <button type="button" id="btnEncolarProyectorOff" class="btn btn-secundario btn-pequeno">
+                        <button type="button" id="btnEncolarProyectorOff" class="btn btn-outline-danger btn-sm btn-secundario btn-pequeno">
                             <span>Epson: Apagar (2x / 2000ms)</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Tarjeta 3: Telemetría manual -->
-                <div class="tarjeta-seccion">
-                    <h3 style="font-size:16px; margin-bottom:8px;">3. Telemetría y Confirmación de Comandos</h3>
+                <div class="tarjeta-seccion card shadow-sm">
+                    <h3 class="h6 fw-bold mb-2">3. Telemetría y Confirmación de Comandos</h3>
                     <div class="formulario-grilla" style="grid-template-columns: 1fr 1fr; margin-bottom:14px;">
                         <div class="campo-grupo">
-                            <label for="simLuces">Estado real de Luces</label>
-                            <select id="simLuces">
+                            <label for="simLuces" class="form-label">Estado real de Luces</label>
+                            <select id="simLuces" class="form-select">
                                 <option value="0">0 (Apagadas)</option>
                                 <option value="1">1 (Encendidas)</option>
                             </select>
                         </div>
                         <div class="campo-grupo">
-                            <label for="simIrId">ID de Comando IR a confirmar</label>
-                            <input type="number" id="simIrId" value="0" min="0">
+                            <label for="simIrId" class="form-label">ID de Comando IR a confirmar</label>
+                            <input type="number" class="form-control" id="simIrId" value="0" min="0">
                         </div>
                         <div class="campo-grupo">
-                            <label for="simRssi">RSSI WiFi (dBm)</label>
-                            <input type="number" id="simRssi" value="-58">
+                            <label for="simRssi" class="form-label">RSSI WiFi (dBm)</label>
+                            <input type="number" class="form-control" id="simRssi" value="-58">
                         </div>
                         <div class="campo-grupo">
-                            <label for="simUptime">Uptime (segundos)</label>
-                            <input type="number" id="simUptime" value="3600">
+                            <label for="simUptime" class="form-label">Uptime (segundos)</label>
+                            <input type="number" class="form-control" id="simUptime" value="3600">
                         </div>
                     </div>
-                    <button type="button" id="btnSimularReporte" class="btn btn-exito btn-bloque">
+                    <button type="button" id="btnSimularReporte" class="btn btn-success btn-exito btn-bloque">
+                        <i class="bi bi-send-check"></i>
                         <span>Enviar Reporte Tradicional (POST /reportar)</span>
                     </button>
                 </div>
 
                 <!-- Tarjeta 4: Captura Infrarroja Avanzada -->
-                <div class="tarjeta-seccion">
-                    <h3 style="font-size:16px; margin-bottom:8px;">4. Simular Lectura KY-022</h3>
-                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">
+                <div class="tarjeta-seccion card shadow-sm">
+                    <h3 class="h6 fw-bold mb-1">4. Simular Lectura KY-022</h3>
+                    <p class="text-body-secondary small mb-3">
                         Envía <code>POST /api/esp32/captura</code> con tramas de Star AC o proyector Epson.
                     </p>
                     <div class="formulario-grilla" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:14px;">
                         <div class="campo-grupo">
-                            <label for="capProto">Protocolo</label>
-                            <input type="text" id="capProto" value="COOLIX">
+                            <label for="capProto" class="form-label">Protocolo</label>
+                            <input type="text" class="form-control" id="capProto" value="COOLIX">
                         </div>
                         <div class="campo-grupo">
-                            <label for="capValor">Código HEX</label>
-                            <input type="text" id="capValor" value="0xB2BF40">
+                            <label for="capValor" class="form-label">Código HEX</label>
+                            <input type="text" class="form-control" id="capValor" value="0xB2BF40">
                         </div>
                         <div class="campo-grupo">
-                            <label for="capBits">Bits</label>
-                            <input type="number" id="capBits" value="24">
+                            <label for="capBits" class="form-label">Bits</label>
+                            <input type="number" class="form-control" id="capBits" value="24">
                         </div>
                         <div class="campo-grupo col-span-4" style="grid-column: span 3;">
-                            <label for="capEstadoHex">Trama de Estado HEX (opcional para A/C)</label>
-                            <input type="text" id="capEstadoHex" placeholder="Ej. B2BF40 (Coolix 24 bits)">
+                            <label for="capEstadoHex" class="form-label">Trama de Estado HEX (opcional para A/C)</label>
+                            <input type="text" class="form-control" id="capEstadoHex" placeholder="Ej. B2BF40 (Coolix 24 bits)">
                         </div>
                         <div class="campo-grupo col-span-4" style="grid-column: span 3;">
-                            <label for="capRaw">Datos RAW en microsegundos (opcional)</label>
-                            <input type="text" id="capRaw" placeholder="Ej. 8950,4420,580,520,580,1620...">
+                            <label for="capRaw" class="form-label">Datos RAW en microsegundos (opcional)</label>
+                            <input type="text" class="form-control" id="capRaw" placeholder="Ej. 8950,4420,580,520,580,1620...">
                         </div>
                     </div>
-                    <button type="button" id="btnSimularCaptura" class="btn btn-secundario btn-bloque">
+                    <button type="button" id="btnSimularCaptura" class="btn btn-outline-secondary btn-secundario btn-bloque">
+                        <i class="bi bi-broadcast"></i>
                         <span>Enviar Captura Infrarroja al Servidor</span>
                     </button>
                 </div>
             </div>
 
             <!-- Columna Derecha: Consola de Monitoreo -->
-            <div class="tarjeta-seccion" style="display:flex; flex-direction:column;">
+            <div class="tarjeta-seccion card shadow-sm d-flex flex-column">
                 <div class="seccion-encabezado">
-                    <h3>Terminal de Comunicaciones</h3>
-                    <button type="button" id="btnLimpiarConsola" class="btn btn-secundario btn-pequeno">Limpiar</button>
+                    <h3 class="h6 fw-bold mb-0"><i class="bi bi-terminal me-1"></i>Terminal de Comunicaciones</h3>
+                    <button type="button" id="btnLimpiarConsola" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno">Limpiar</button>
                 </div>
-                <div id="consola" class="simulador-consola" style="flex:1; min-height:450px;">[SISTEMA] Simulador ESP32 Multi-Aula inicializado. Listo para probar.</div>
+                <div id="consola" class="simulador-consola consola-log" style="flex:1; min-height:450px;">[SISTEMA] Simulador ESP32 Multi-Aula inicializado. Listo para probar.</div>
             </div>
         </div>
     </div>

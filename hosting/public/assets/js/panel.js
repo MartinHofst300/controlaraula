@@ -210,11 +210,12 @@
     // -------------------------------------------------------------------------
     // 2. CENTRO DE CONFIGURACIÓN Y PREFERENCIAS (LOCALSTORAGE)
     // -------------------------------------------------------------------------
-    const PREFS_KEY = 'control_aula_prefs';
+    const PREFS_KEY = 'control_aula_prefs_bs5';
     const PREFS_DEFAULT = {
-        tema: 'oscuro',           // 'oscuro' | 'claro' | 'auto'
-        acento: 'dorado',         // 'dorado' | 'azul' | 'esmeralda' | 'violeta' | 'coral' | 'cian' | 'custom'
-        colorCustom: '#897c37',
+        bs5: true,
+        tema: 'claro',            // 'claro' | 'oscuro' | 'auto'
+        acento: 'azul',           // 'azul' | 'dorado' | 'esmeralda' | 'violeta' | 'coral' | 'cian' | 'custom'
+        colorCustom: '#0d6efd',
         fuente: 'sans',           // 'sans' | 'serif' | 'mono'
         escalaPct: 100,           // 85 a 130
         densidad: 'comoda',       // 'comoda' | 'compacta'
@@ -232,12 +233,13 @@
             const local = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
             const servidor = (typeof window.PREFS_SERVIDOR_DB === 'object' && window.PREFS_SERVIDOR_DB !== null)
                 ? window.PREFS_SERVIDOR_DB : {};
-            const guardado = Object.assign({}, local, servidor);
+            const guardado = Object.assign({}, servidor, local);
 
             let modoPref = guardado.prefAireModo || PREFS_DEFAULT.prefAireModo;
             if (modoPref === 'deshumidificador') modoPref = 'seco';
 
             return {
+                bs5: true,
                 tema: ['oscuro', 'claro', 'auto'].includes(guardado.tema) ? guardado.tema : PREFS_DEFAULT.tema,
                 acento: ['dorado', 'azul', 'esmeralda', 'violeta', 'coral', 'cian', 'custom'].includes(guardado.acento)
                     ? guardado.acento : PREFS_DEFAULT.acento,
@@ -282,22 +284,23 @@
 
     function hexToRgba(hex, alpha) {
         const limpio = hex.replace('#', '');
-        const r = parseInt(limpio.substring(0, 2), 16) || 137;
-        const g = parseInt(limpio.substring(2, 4), 16) || 124;
-        const b = parseInt(limpio.substring(4, 6), 16) || 55;
+        const r = parseInt(limpio.substring(0, 2), 16) || 13;
+        const g = parseInt(limpio.substring(2, 4), 16) || 110;
+        const b = parseInt(limpio.substring(4, 6), 16) || 253;
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
     function aplicarPreferencias(prefs, reiniciarTimer = false, guardarEnDB = true, esReset = false) {
         const root = document.documentElement;
 
-        // 1. Resolver tema (oscuro, claro o automático del sistema)
+        // 1. Resolver tema (oscuro, claro o automático del sistema) y sincronizar con Bootstrap 5
         let temaEfectivo = prefs.tema;
         if (temaEfectivo === 'auto') {
             temaEfectivo = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)
                 ? 'claro' : 'oscuro';
         }
         root.setAttribute('data-theme', temaEfectivo);
+        root.setAttribute('data-bs-theme', temaEfectivo === 'claro' ? 'light' : 'dark');
 
         // 2. Paleta de acento o color personalizado
         root.setAttribute('data-accent', prefs.acento);
@@ -1300,60 +1303,53 @@
         aulas.forEach(a => {
             const card = document.createElement('div');
             const esAulaActiva = (a.id === aulaActualId);
-            const onlineClase = a.online ? 'color:var(--color-success);' : 'color:var(--color-danger);';
-            const onlineTexto = a.online ? 'ONLINE' : 'OFFLINE';
+            const onlineBadge = a.online
+                ? '<span class="badge text-bg-success">ONLINE</span>'
+                : '<span class="badge text-bg-danger">OFFLINE</span>';
 
-            card.style.cssText = `
-                background: var(--bg-surface);
-                border: 2px solid ${esAulaActiva ? 'var(--color-primary)' : 'var(--border-subtle)'};
-                border-radius: var(--radius-md);
-                padding: 16px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                box-shadow: var(--shadow-card);
-                position: relative;
-            `;
+            card.className = `card shadow-sm p-3 d-flex flex-column gap-2 ${esAulaActiva ? 'border-primary border-2' : ''}`;
 
             const est = a.estado || {};
             const lucesBadge = est.luces === 1 
-                ? '<span style="background:rgba(234,179,8,0.2); color:#eab308; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">Luces ON</span>'
-                : '<span style="background:rgba(255,255,255,0.06); color:var(--text-muted); padding:3px 8px; border-radius:4px; font-size:11px;">Luces OFF</span>';
+                ? '<span class="badge text-bg-warning">Luces ON</span>'
+                : '<span class="badge text-bg-secondary">Luces OFF</span>';
 
             const aireBadge = est.aire_encendido === 1
-                ? `<span style="background:rgba(59,130,246,0.2); color:#60a5fa; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">Aire ON · ${est.aire_temp}°C (${(est.aire_modo || 'frio').toUpperCase()})</span>`
-                : '<span style="background:rgba(255,255,255,0.06); color:var(--text-muted); padding:3px 8px; border-radius:4px; font-size:11px;">Aire OFF</span>';
+                ? `<span class="badge text-bg-info">Aire ON · ${est.aire_temp}°C (${(est.aire_modo || 'frio').toUpperCase()})</span>`
+                : '<span class="badge text-bg-secondary">Aire OFF</span>';
 
             const proyBadge = est.proyector_encendido === 1
-                ? `<span style="background:rgba(168,85,247,0.2); color:#c084fc; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">Proyector ON · ${(est.proyector_fuente || 'hdmi1').toUpperCase()}</span>`
-                : '<span style="background:rgba(255,255,255,0.06); color:var(--text-muted); padding:3px 8px; border-radius:4px; font-size:11px;">Proyector OFF</span>';
+                ? `<span class="badge text-bg-primary">Proyector ON · ${(est.proyector_fuente || 'hdmi1').toUpperCase()}</span>`
+                : '<span class="badge text-bg-secondary">Proyector OFF</span>';
 
-            const tipoTag = `<span class="rol-tag" style="font-size:10px; margin-left:6px;">${escapeHtml(a.tipo || 'Aula')}</span>`;
+            const tipoTag = `<span class="badge text-bg-light border">${escapeHtml(a.tipo || 'Aula')}</span>`;
 
             card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h4 style="margin:0; font-size:15px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                        <h4 class="h6 fw-bold mb-1 d-flex align-items-center gap-1 flex-wrap">
                             ${escapeHtml(a.nombre)}
                             ${tipoTag}
-                            ${esAulaActiva ? '<span style="font-size:10px; background:var(--color-primary-bg); color:var(--text-gold); border:1px solid var(--border-highlight); padding:2px 6px; border-radius:4px;">ACTUAL</span>' : ''}
+                            ${esAulaActiva ? '<span class="badge text-bg-primary">ACTUAL</span>' : ''}
                         </h4>
-                        <span style="font-size:12px; color:var(--text-secondary);">${escapeHtml(a.ubicacion || 'Sin ubicación')}</span>
+                        <span class="text-body-secondary small">${escapeHtml(a.ubicacion || 'Sin ubicación')}</span>
                     </div>
-                    <span style="font-size:11px; font-weight:700; ${onlineClase}">${onlineTexto}</span>
+                    ${onlineBadge}
                 </div>
 
-                <div style="display:flex; flex-wrap:wrap; gap:6px; margin:4px 0;">
+                <div class="d-flex flex-wrap gap-1 my-1">
                     ${lucesBadge}
                     ${aireBadge}
                     ${proyBadge}
                 </div>
 
-                <div style="display:flex; gap:8px; margin-top:auto; pt:6px;">
-                    <button type="button" class="btn btn-secundario btn-pequeno btn-tablero-operar" data-id="${a.id}" style="flex:1;">
+                <div class="d-flex gap-2 mt-auto pt-1">
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-secundario btn-pequeno btn-tablero-operar flex-grow-1" data-id="${a.id}">
+                        <i class="bi bi-sliders"></i>
                         <span>Operar Aula</span>
                     </button>
-                    <button type="button" class="btn btn-peligro btn-pequeno btn-tablero-apagar" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Apagar todo en esta aula">
+                    <button type="button" class="btn btn-outline-danger btn-sm btn-peligro btn-pequeno btn-tablero-apagar" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Apagar todo en esta aula">
+                        <i class="bi bi-power"></i>
                         <span>Apagar Todo</span>
                     </button>
                 </div>
@@ -1405,28 +1401,28 @@
             tr.innerHTML = `
                 <td><strong>#${a.id}</strong></td>
                 <td><strong>${escapeHtml(a.nombre)}</strong></td>
-                <td><span class="rol-tag">${escapeHtml(a.tipo || 'Aula')}</span></td>
+                <td><span class="rol-tag badge text-bg-secondary">${escapeHtml(a.tipo || 'Aula')}</span></td>
                 <td>${escapeHtml(a.ubicacion || '--')}</td>
-                <td><code style="font-size:12px; font-weight:700; color:var(--text-gold); background:var(--bg-input); padding:2px 8px; border-radius:4px;">${escapeHtml(a.usuario_acceso || '--')}</code></td>
+                <td><code class="codigo-tag">${escapeHtml(a.usuario_acceso || '--')}</code></td>
                 <td>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <code style="font-size:11px; background:var(--bg-input); padding:2px 6px; border-radius:4px; max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(a.api_key_esp32 || '')}">${escapeHtml(a.api_key_esp32 || '--')}</code>
-                        <button type="button" class="btn btn-secundario btn-pequeno btn-copiar-key" data-key="${escapeHtml(a.api_key_esp32 || '')}" title="Copiar API Key">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <div class="d-flex align-items-center gap-1">
+                        <code class="codigo-tag" style="max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(a.api_key_esp32 || '')}">${escapeHtml(a.api_key_esp32 || '--')}</code>
+                        <button type="button" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno btn-copiar-key" data-key="${escapeHtml(a.api_key_esp32 || '')}" title="Copiar API Key">
+                            <i class="bi bi-clipboard"></i>
                         </button>
-                        <button type="button" class="btn btn-secundario btn-pequeno btn-regen-key" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Regenerar API Key">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        <button type="button" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno btn-regen-key" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Regenerar API Key">
+                            <i class="bi bi-arrow-clockwise"></i>
                         </button>
                     </div>
                 </td>
                 <td>
-                    <button type="button" class="btn btn-secundario btn-pequeno btn-toggle-activa-aula" data-id="${a.id}" style="${activaClase}">
+                    <button type="button" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno btn-toggle-activa-aula" data-id="${a.id}" style="${activaClase}">
                         ${activaTexto}
                     </button>
                 </td>
                 <td><span class="codigo-tag">${a.codigos_ir_count || 0} códigos</span></td>
                 <td style="white-space:nowrap;">
-                    <button type="button" class="btn btn-secundario btn-pequeno btn-editar-aula" 
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-secundario btn-pequeno btn-editar-aula" 
                         data-id="${a.id}" 
                         data-nombre="${escapeHtml(a.nombre)}" 
                         data-tipo="${escapeHtml(a.tipo || 'Aula')}" 
@@ -1436,12 +1432,12 @@
                         data-proto-aire="${escapeHtml(a.hardware?.protocolo_aire || 'COOLIX')}"
                         data-marca-proy="${escapeHtml(a.hardware?.marca_proyector || 'Epson')}"
                         data-proto-proy="${escapeHtml(a.hardware?.protocolo_proyector || 'EPSON_NEC')}">
-                        Editar
+                        <i class="bi bi-pencil"></i> Editar
                     </button>
-                    <button type="button" class="btn btn-secundario btn-pequeno btn-clonar-aula" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Clonar plantilla de códigos IR">
+                    <button type="button" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno btn-clonar-aula" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Clonar plantilla de códigos IR">
                         Clonar IR
                     </button>
-                    ${a.id > 1 ? `<button type="button" class="btn btn-peligro btn-pequeno btn-eliminar-aula" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Eliminar espacio">Eliminar</button>` : ''}
+                    ${a.id > 1 ? `<button type="button" class="btn btn-outline-danger btn-sm btn-peligro btn-pequeno btn-eliminar-aula" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Eliminar espacio">Eliminar</button>` : ''}
                 </td>
             `;
 
