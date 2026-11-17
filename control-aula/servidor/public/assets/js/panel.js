@@ -911,6 +911,11 @@
 
         actualizarIndicadorConexion(data.esp32_online, data.segundos_desde_contacto, data.aula_nombre || '');
 
+        // Guardar la IP local del ESP32 para el modo respaldo de offline.html (PWA)
+        if (data.ip && /^\d{1,3}(\.\d{1,3}){3}$/.test(data.ip)) {
+            try { localStorage.setItem('control_aula_esp32_ip', data.ip); } catch (e) {}
+        }
+
         // Telemetría (solo si existe en el DOM para Admin)
         if (telIp) telIp.textContent = data.ip || '--';
         if (telRssi) telRssi.textContent = formatearRssi(data.rssi);

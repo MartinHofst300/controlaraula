@@ -60,7 +60,26 @@ define('MINUTOS_BLOQUEO_LOGIN', 15);
 define('TRUSTED_PROXY', false);
 
 // -----------------------------------------------------------------------------
-// 5. Inicialización de sesión segura
+// 5. Detección del proxy HTTPS local (Nginx Proxy Manager en el mismo VPS)
+// -----------------------------------------------------------------------------
+function peticionDesdeProxyLocal() {
+    $remota = $_SERVER['REMOTE_ADDR'] ?? '';
+    if ($remota === '' || !filter_var($remota, FILTER_VALIDATE_IP)) {
+        return false;
+    }
+    return filter_var($remota, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+}
+
+function conexionEsHTTPS() {
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        return true;
+    }
+    return peticionDesdeProxyLocal()
+        && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+}
+
+// -----------------------------------------------------------------------------
+// 6. Inicialización de sesión segura
 // -----------------------------------------------------------------------------
 function iniciarSesionSegura() {
     if (session_status() === PHP_SESSION_NONE) {
@@ -68,7 +87,7 @@ function iniciarSesionSegura() {
             'lifetime' => 0,
             'path' => '/',
             'domain' => '',
-            'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'secure' => conexionEsHTTPS(),
             'httponly' => true,
             'samesite' => 'Lax'
         ];

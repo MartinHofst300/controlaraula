@@ -160,7 +160,32 @@ unsigned long intervaloPolling = INTERVALO_POLLING_MS;
 unsigned long ultimoLedToggleMs = 0; // Temporizador para parpadeo de LED
 bool estadoLed = false;
 unsigned long ultimaReconexionMs = 0; // Temporizador para reconexion WiFi
-bool intentandoRedSecundaria = false; // Alternancia entre WIFI_SSID y WIFI_SSID_2
+int indiceRedActual = 0;              // Indice de red WiFi actual en la lista
+
+struct RedWiFiConfig {
+  const char *ssid;
+  const char *pass;
+};
+
+const RedWiFiConfig REDES_WIFI[] = {
+  { WIFI_SSID,   WIFI_PASS },
+#ifdef WIFI_SSID_2
+  { WIFI_SSID_2, WIFI_PASS_2 },
+#endif
+#ifdef WIFI_SSID_3
+  { WIFI_SSID_3, WIFI_PASS_3 },
+#endif
+#ifdef WIFI_SSID_4
+  { WIFI_SSID_4, WIFI_PASS_4 },
+#endif
+#ifdef WIFI_SSID_5
+  { WIFI_SSID_5, WIFI_PASS_5 },
+#endif
+#ifdef WIFI_SSID_6
+  { WIFI_SSID_6, WIFI_PASS_6 },
+#endif
+};
+const int TOTAL_REDES_WIFI = sizeof(REDES_WIFI) / sizeof(REDES_WIFI[0]);
 
 // -----------------------------------------------------------------------------
 // DECLARACION PREVIA DE FUNCIONES
@@ -229,36 +254,33 @@ void setup() {
   http.setReuse(false); // Evitar colision de sockets (Error HTTP -5)
   http.setTimeout(HTTP_TIMEOUT_MS);
 
-  // 4. Conexion a red WiFi (intenta principal y luego respaldo)
+  // 4. Conexion a red WiFi (intenta las redes configuradas en orden)
   WiFi.mode(WIFI_STA);
-  Serial.print(F("[WIFI] Conectando a red principal: "));
-  Serial.println(WIFI_SSID);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  for (int i = 0; i < TOTAL_REDES_WIFI; i++) {
+    if (strlen(REDES_WIFI[i].ssid) == 0) continue;
+    indiceRedActual = i;
+    Serial.print(F("[WIFI] Intentando conectar a red ("));
+    Serial.print(i + 1);
+    Serial.print(F("/"));
+    Serial.print(TOTAL_REDES_WIFI);
+    Serial.print(F("): "));
+    Serial.println(REDES_WIFI[i].ssid);
 
-  unsigned long inicioWiFi = millis();
-  while (WiFi.status() != WL_CONNECTED && (millis() - inicioWiFi < 6000)) {
-    digitalWrite(PIN_LED_ESTADO, !digitalRead(PIN_LED_ESTADO));
-    delay(200);
-    Serial.print(F("."));
-  }
-  Serial.println();
-
-#ifdef WIFI_SSID_2
-  if (WiFi.status() != WL_CONNECTED && strlen(WIFI_SSID_2) > 0) {
-    Serial.print(F("[WIFI] Intentando red secundaria: "));
-    Serial.println(WIFI_SSID_2);
     WiFi.disconnect();
-    WiFi.begin(WIFI_SSID_2, WIFI_PASS_2);
-    intentandoRedSecundaria = true;
-    inicioWiFi = millis();
-    while (WiFi.status() != WL_CONNECTED && (millis() - inicioWiFi < 6000)) {
+    WiFi.begin(REDES_WIFI[i].ssid, REDES_WIFI[i].pass);
+
+    unsigned long inicioWiFi = millis();
+    while (WiFi.status() != WL_CONNECTED && (millis() - inicioWiFi < 5000)) {
       digitalWrite(PIN_LED_ESTADO, !digitalRead(PIN_LED_ESTADO));
       delay(200);
       Serial.print(F("."));
     }
     Serial.println();
+
+    if (WiFi.status() == WL_CONNECTED) {
+      break;
+    }
   }
-#endif
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.print(F("[WIFI] Conectado exitosamente a "));
@@ -317,22 +339,15 @@ void vigilarWiFi() {
   if (WiFi.status() != WL_CONNECTED) {
     ultimoSyncOk = false;
     unsigned long ahora = millis();
-    if (ahora - ultimaReconexionMs >= 10000) {
+    if (ahora - ultimaReconexionMs >= 8000) {
       ultimaReconexionMs = ahora;
       WiFi.disconnect();
-#ifdef WIFI_SSID_2
-      if (strlen(WIFI_SSID_2) > 0) {
-        intentandoRedSecundaria = !intentandoRedSecundaria;
-        const char *ssid = intentandoRedSecundaria ? WIFI_SSID_2 : WIFI_SSID;
-        const char *pass = intentandoRedSecundaria ? WIFI_PASS_2 : WIFI_PASS;
-        Serial.print(F("[WIFI] Desconectado. Reintentando con red: "));
-        Serial.println(ssid);
-        WiFi.begin(ssid, pass);
-        return;
-      }
-#endif
-      Serial.println(F("[WIFI] Desconectado. Reintentando conexion..."));
-      WiFi.begin(WIFI_SSID, WIFI_PASS);
+      indiceRedActual = (indiceRedActual + 1) % TOTAL_REDES_WIFI;
+      const char *ssid = REDES_WIFI[indiceRedActual].ssid;
+      const char *pass = REDES_WIFI[indiceRedActual].pass;
+      Serial.print(F("[WIFI] Desconectado. Reintentando con red: "));
+      Serial.println(ssid);
+      WiFi.begin(ssid, pass);
     }
   }
 }

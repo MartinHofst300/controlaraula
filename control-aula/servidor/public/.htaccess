@@ -39,9 +39,18 @@ ServerSignature Off
     RewriteRule ^(.+?)/?$ $1.php [L,QSA]
 </IfModule>
 
+<IfModule mod_mime.c>
+    AddType application/manifest+json .json .webmanifest
+    AddType application/javascript .js
+    AddType image/svg+xml .svg
+</IfModule>
+
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
+    <FilesMatch "^(sw\.js|manifest\.json)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </FilesMatch>
 </IfModule>

@@ -12,6 +12,21 @@ require_once __DIR__ . '/funciones.php';
  * Obtiene la dirección IP real del cliente considerando posibles proxies reversos
  */
 function obtenerIPCliente() {
+    // Proxy HTTPS local (Nginx Proxy Manager): usar la IP real del visitante
+    if (function_exists('peticionDesdeProxyLocal') && peticionDesdeProxyLocal()) {
+        $realIp = trim($_SERVER['HTTP_X_REAL_IP'] ?? '');
+        if ($realIp !== '' && filter_var($realIp, FILTER_VALIDATE_IP)) {
+            return $realIp;
+        }
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            // La última IP de la lista es la que agregó nuestro proxy (no se puede falsear)
+            $partes = array_map('trim', explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
+            $ultima = end($partes);
+            if ($ultima && filter_var($ultima, FILTER_VALIDATE_IP)) {
+                return $ultima;
+            }
+        }
+    }
     if (defined('TRUSTED_PROXY') && TRUSTED_PROXY === true) {
         if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
             return $_SERVER['HTTP_CF_CONNECTING_IP'];

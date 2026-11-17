@@ -535,5 +535,6 @@ $csrfToken = obtenerTokenCSRF();
             }
         });
     </script>
+    <script src="assets/js/pwa.js"></script>
 </body>
 </html>

@@ -11,14 +11,27 @@
 // 1. CREDENCIALES DE RED WIFI
 // Ingrese aqui el nombre (SSID) y clave de su red WiFi (o hotspot del celular)
 // -----------------------------------------------------------------------------
-// Red Principal (Hotspot / WiFi actual)
+// Red 1: Principal (Hotspot / WiFi actual)
 #define WIFI_SSID       "Galaxydetincho"
 #define WIFI_PASS       "12345678"
 #define WIFI_PASSWORD   WIFI_PASS // Alias de compatibilidad
 
-// Red Secundaria de Respaldo
+// Red 2: Secundaria de Respaldo
 #define WIFI_SSID_2     "Clarowifi"
 #define WIFI_PASS_2     "Hofstetter07"
+
+// Redes Adicionales del Colegio (Respaldo Multi-Red)
+#define WIFI_SSID_3     "LSEET1"
+#define WIFI_PASS_3     "EdujhSqul9eh"
+
+#define WIFI_SSID_4     "Maestros"
+#define WIFI_PASS_4     "Docentes_2025"
+
+#define WIFI_SSID_5     "Estudiantes"
+#define WIFI_PASS_5     "Escuelas_2025"
+
+#define WIFI_SSID_6     "Vllamada"
+#define WIFI_PASS_6     "Video_2025"
 
 // -----------------------------------------------------------------------------
 // 2. ENDPOINTS Y SERVIDOR EN PRODUCCION (VPS DOCKER)
