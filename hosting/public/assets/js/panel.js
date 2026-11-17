@@ -411,6 +411,23 @@
         }
     }
 
+    // Tienen que existir antes del primer aplicarPreferencias(), que ya dibuja el termostato
+    const INFO_MODOS_AIRE = {
+        frio: { texto: 'Frío (Cool)', chip: 'Frío (Cool)', clase: 'modo-frio' },
+        calor: { texto: 'Calor (Heat)', chip: 'Calor (Heat)', clase: 'modo-calor' },
+        ventilacion: { texto: 'Ventilación (Fan)', chip: 'Ventilación', clase: 'modo-ventilacion' },
+        seco: { texto: 'Deshumidificador (Seco)', chip: 'Seco (Dry)', clase: 'modo-deshumidificador' },
+        deshumidificador: { texto: 'Deshumidificador (Seco)', chip: 'Seco (Dry)', clase: 'modo-deshumidificador' },
+        auto: { texto: 'Automático (Auto)', chip: 'Automático', clase: 'modo-auto' }
+    };
+
+    const INFO_FAN_AIRE = {
+        auto: { texto: 'Automático', chip: 'Fan: Auto' },
+        bajo: { texto: 'Velocidad Baja', chip: 'Fan: Bajo' },
+        medio: { texto: 'Velocidad Media', chip: 'Fan: Medio' },
+        alto: { texto: 'Alto / Turbo', chip: 'Fan: Turbo' }
+    };
+
     let prefsActuales = obtenerPreferencias();
     aplicarPreferencias(prefsActuales, false, false);
 
@@ -725,22 +742,6 @@
     // -------------------------------------------------------------------------
     // 5. RENDERIZADO VISUAL DEL TERMOSTATO Y PROYECTOR
     // -------------------------------------------------------------------------
-    const INFO_MODOS_AIRE = {
-        frio: { texto: 'Frío (Cool)', chip: 'Frío (Cool)', clase: 'modo-frio' },
-        calor: { texto: 'Calor (Heat)', chip: 'Calor (Heat)', clase: 'modo-calor' },
-        ventilacion: { texto: 'Ventilación (Fan)', chip: 'Ventilación', clase: 'modo-ventilacion' },
-        seco: { texto: 'Deshumidificador (Seco)', chip: 'Seco (Dry)', clase: 'modo-deshumidificador' },
-        deshumidificador: { texto: 'Deshumidificador (Seco)', chip: 'Seco (Dry)', clase: 'modo-deshumidificador' },
-        auto: { texto: 'Automático (Auto)', chip: 'Automático', clase: 'modo-auto' }
-    };
-
-    const INFO_FAN_AIRE = {
-        auto: { texto: 'Automático', chip: 'Fan: Auto' },
-        bajo: { texto: 'Velocidad Baja', chip: 'Fan: Bajo' },
-        medio: { texto: 'Velocidad Media', chip: 'Fan: Medio' },
-        alto: { texto: 'Alto / Turbo', chip: 'Fan: Turbo' }
-    };
-
     function actualizarVistaTermostato() {
         const infoModo = INFO_MODOS_AIRE[estadoAire.modo] || INFO_MODOS_AIRE.frio;
         const infoFan = INFO_FAN_AIRE[estadoAire.fan] || INFO_FAN_AIRE.auto;
