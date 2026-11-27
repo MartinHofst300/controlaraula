@@ -152,13 +152,6 @@ if ($rol === 'aula') {
                     <span id="textoConexion">OFFLINE</span>
                 </div>
 
-                <?php if ($esAdmin): ?>
-                <a href="simulador.php" class="btn btn-outline-secondary btn-sm px-3 fw-medium" title="Simular ESP32 sin hardware">
-                    <i class="bi bi-cpu"></i>
-                    <span>Simulador</span>
-                </a>
-                <?php endif; ?>
-
                 <button type="button" id="btnAbrirConfig" class="btn btn-outline-primary btn-sm px-3 fw-medium btn-config-header" title="Centro de Configuración y Perfil">
                     <i class="bi bi-gear"></i>
                     <span>Configuración</span>
@@ -387,48 +380,16 @@ if ($rol === 'aula') {
             <div class="admin-toggle-header card shadow-sm" id="btnToggleAdminPanel" role="button" tabindex="0" aria-expanded="true">
                 <div class="admin-toggle-titulo">
                     <i class="bi bi-shield-check text-primary fs-5"></i>
-                    <span>Panel de Administración, Usuarios y Configuración Técnica</span>
+                    <span>Panel de Administración</span>
                 </div>
                 <span class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno" id="textoToggleAdmin">Ocultar herramientas</span>
             </div>
 
             <section id="contenedorAdminTecnico" class="seccion-tabs">
-                <!-- Barra de Telemetría ESP32 -->
-                <div class="barra-telemetria card shadow-sm" aria-label="Telemetría del dispositivo">
-                    <div class="telemetria-item">
-                        <span class="etiqueta"><i class="bi bi-router me-1"></i>IP Local ESP32</span>
-                        <span class="valor" id="telIp">--</span>
-                    </div>
-                    <div class="telemetria-item">
-                        <span class="etiqueta"><i class="bi bi-wifi me-1"></i>Señal WiFi</span>
-                        <span class="valor" id="telRssi">--</span>
-                    </div>
-                    <div class="telemetria-item">
-                        <span class="etiqueta"><i class="bi bi-clock-history me-1"></i>Tiempo Activo</span>
-                        <span class="valor" id="telUptime">--</span>
-                    </div>
-                    <div class="telemetria-item">
-                        <span class="etiqueta"><i class="bi bi-cpu me-1"></i>Firmware</span>
-                        <span class="valor" id="telFw">--</span>
-                    </div>
-                    <div class="telemetria-item">
-                        <span class="etiqueta"><i class="bi bi-activity me-1"></i>Último Contacto</span>
-                        <span class="valor" id="telContacto">--</span>
-                    </div>
-                </div>
-
                 <nav class="tabs-navegacion nav nav-tabs mb-3" aria-label="Pestañas de administración">
                     <button type="button" class="tab-btn nav-link activo" data-target="tab-aulas">
                         <i class="bi bi-building"></i>
                         <span>Gestión de Aulas y Cuentas</span>
-                    </button>
-                    <button type="button" class="tab-btn nav-link" data-target="tab-codigos">
-                        <i class="bi bi-broadcast"></i>
-                        <span>Códigos IR</span>
-                    </button>
-                    <button type="button" class="tab-btn nav-link" data-target="tab-capturas">
-                        <i class="bi bi-rss"></i>
-                        <span>Capturas Receptor (KY-022)</span>
                     </button>
                     <button type="button" class="tab-btn nav-link" data-target="tab-log">
                         <i class="bi bi-journal-text"></i>
@@ -469,7 +430,6 @@ if ($rol === 'aula') {
                             <table class="table table-striped table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>ID</th>
                                         <th>Espacio / Nombre</th>
                                         <th>Tipo</th>
                                         <th>Cuenta Acceso</th>
@@ -478,7 +438,7 @@ if ($rol === 'aula') {
                                     </tr>
                                 </thead>
                                 <tbody id="tablaAulasBody">
-                                    <tr><td colspan="6" class="text-center py-3">Cargando listado de espacios...</td></tr>
+                                    <tr><td colspan="5" class="text-center py-3">Cargando listado de espacios...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -592,142 +552,7 @@ if ($rol === 'aula') {
                     </div>
                 </div>
 
-                <!-- Pestaña 2: Catálogo de Códigos IR -->
-                <div id="tab-codigos" class="tab-contenido">
-                    <div class="tarjeta-seccion card shadow-sm">
-                        <div class="seccion-encabezado d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <h3 class="h6 fw-bold mb-0">Catálogo de Códigos Infrarrojos</h3>
-                            <div class="d-flex align-items-center gap-2">
-                                <label for="filtroCodigosAula" class="form-label small text-body-secondary mb-0">Filtrar:</label>
-                                <select id="filtroCodigosAula" class="form-select form-select-sm" style="width: auto;">
-                                    <option value="">Todas las Aulas y Globales</option>
-                                    <option value="0">Solo Plantilla Global</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="tabla-contenedor table-responsive">
-                            <table class="table table-striped table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Ámbito / Aula</th>
-                                        <th>Dispositivo</th>
-                                        <th>Acción</th>
-                                        <th>Protocolo</th>
-                                        <th>Datos de Transmisión</th>
-                                        <th>Parámetros</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablaCodigosBody">
-                                    <tr><td colspan="7" class="text-center py-3">Cargando catálogo...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Formulario de Alta y Edición de Códigos -->
-                        <div class="mt-4 pt-3 border-top">
-                            <h4 class="h6 fw-bold text-secondary mb-3">Dar de alta o editar comando IR</h4>
-                            <div id="formFeedback"></div>
-                            <form id="formCodigo">
-                                <div class="formulario-grilla">
-                                    <div class="campo-grupo">
-                                        <label for="codAulaId" class="form-label">Ámbito / Aula</label>
-                                        <select id="codAulaId" class="form-select">
-                                            <option value="0">Plantilla Global (Todas las aulas)</option>
-                                        </select>
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="codDispositivo" class="form-label">Dispositivo</label>
-                                        <select id="codDispositivo" class="form-select" required>
-                                            <option value="aire">Aire acondicionado</option>
-                                            <option value="proyector">Proyector</option>
-                                        </select>
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="codAccion" class="form-label">Acción (identificador)</label>
-                                        <input type="text" class="form-control" id="codAccion" placeholder="prender, apagar, hdmi1..." required pattern="[a-zA-Z0-9_-]+">
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="codProtocolo" class="form-label">Protocolo</label>
-                                        <input type="text" class="form-control" id="codProtocolo" placeholder="NEC, SONY, RC5, RAW..." required>
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="codCodigo" class="form-label">Código Hexadecimal</label>
-                                        <input type="text" class="form-control" id="codCodigo" placeholder="0xFF629D">
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="codBits" class="form-label">Bits</label>
-                                        <input type="number" class="form-control" id="codBits" value="32" min="1" max="256">
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="codRepeticiones" class="form-label">Repeticiones</label>
-                                        <input type="number" class="form-control" id="codRepeticiones" value="1" min="1" max="10">
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="codPausaMs" class="form-label">Pausa entre envíos (ms)</label>
-                                        <input type="number" class="form-control" id="codPausaMs" value="100" min="0" max="5000">
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="codFrecuenciaKhz" class="form-label">Frecuencia (kHz)</label>
-                                        <input type="number" class="form-control" id="codFrecuenciaKhz" value="38" min="10" max="60">
-                                    </div>
-                                    <div class="campo-grupo col-span-4">
-                                        <label for="codEstadoHex" class="form-label">Trama de Estado HEX (opcional para A/C de paquete largo)</label>
-                                        <input type="text" class="form-control" id="codEstadoHex" placeholder="Ej. 0x23CB26010020... o bytes continuos">
-                                    </div>
-                                    <div class="campo-grupo col-span-4">
-                                        <label for="codRaw" class="form-label">Datos RAW en microsegundos (opcional)</label>
-                                        <textarea class="form-control" id="codRaw" rows="2" placeholder="Ej. 8950, 4420, 580, 520, 580, 1620..."></textarea>
-                                    </div>
-                                    <div class="campo-grupo col-span-4">
-                                        <label for="codDescripcion" class="form-label">Descripción (opcional)</label>
-                                        <input type="text" class="form-control" id="codDescripcion" placeholder="Ej. Encender proyector Epson HDMI 1">
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2 mt-2">
-                                    <button type="submit" class="btn btn-primary btn-primario">
-                                        <i class="bi bi-save"></i>
-                                        <span>Guardar Código IR</span>
-                                    </button>
-                                    <button type="button" id="btnLimpiarFormCodigo" class="btn btn-outline-secondary btn-secundario">Limpiar Formulario</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pestaña 3: Capturas del Receptor KY-022 -->
-                <div id="tab-capturas" class="tab-contenido">
-                    <div class="tarjeta-seccion card shadow-sm">
-                        <div class="seccion-encabezado">
-                            <div>
-                                <h3 class="h6 fw-bold mb-1">Lecturas Capturadas por KY-022</h3>
-                                <p class="text-body-secondary small mb-0">Apunta el control remoto del aula al receptor para clonar códigos simples, tramas de estado o secuencias RAW.</p>
-                            </div>
-                        </div>
-                        <div id="capturaAsignarFeedback"></div>
-                        <div class="tabla-contenedor table-responsive">
-                            <table class="table table-striped table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Hora</th>
-                                        <th>Aula</th>
-                                        <th>Protocolo</th>
-                                        <th>Datos Capturados</th>
-                                        <th>Bits</th>
-                                        <th>Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablaCapturasBody">
-                                    <tr><td colspan="6" class="text-center py-3">Esperando capturas del ESP32...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pestaña 4: Registro de Eventos -->
+                <!-- Pestaña 2: Registro de Eventos -->
                 <div id="tab-log" class="tab-contenido">
                     <div class="tarjeta-seccion card shadow-sm">
                         <div class="seccion-encabezado">

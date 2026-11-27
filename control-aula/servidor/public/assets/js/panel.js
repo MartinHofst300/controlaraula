@@ -1436,22 +1436,22 @@
         tablaAulasBody.innerHTML = '';
 
         if (!aulas || aulas.length === 0) {
-            tablaAulasBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No hay espacios registrados</td></tr>';
+            tablaAulasBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No hay espacios registrados</td></tr>';
             return;
         }
 
         aulas.forEach(a => {
             const tr = document.createElement('tr');
-            const activaTexto = a.activa ? 'Activa' : 'Inactiva';
-            const activaClase = a.activa ? 'color:var(--color-success); font-weight:700;' : 'color:var(--text-muted);';
+            const esActiva = Number(a.activa) === 1;
+            const activaTexto = esActiva ? 'Activa' : 'Inactiva';
+            const btnEstadoClase = esActiva ? 'btn-outline-success fw-bold' : 'btn-outline-secondary';
 
             tr.innerHTML = `
-                <td><strong>#${a.id}</strong></td>
                 <td><strong>${escapeHtml(a.nombre)}</strong></td>
                 <td><span class="rol-tag badge text-bg-secondary">${escapeHtml(a.tipo || 'Aula')}</span></td>
                 <td><code class="codigo-tag">${escapeHtml(a.nombre)}</code></td>
                 <td>
-                    <button type="button" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno btn-toggle-activa-aula" data-id="${a.id}" style="${activaClase}">
+                    <button type="button" class="btn btn-sm ${btnEstadoClase} btn-toggle-activa-aula" data-id="${a.id}" title="Habilitar o deshabilitar temporalmente este espacio">
                         ${activaTexto}
                     </button>
                 </td>
@@ -1503,7 +1503,7 @@
                     aulaPassword.placeholder = 'Dejar vacío para no modificarla';
                 }
                 if (labelAulaPassword) labelAulaPassword.textContent = 'Nueva Contraseña (opcional)';
-                tituloFormAula.textContent = `Editar espacio #${btn.dataset.id} - ${btn.dataset.nombre}`;
+                tituloFormAula.textContent = `Editar espacio: ${btn.dataset.nombre}`;
                 textoBtnGuardarAula.textContent = 'Actualizar Espacio';
                 formAula.scrollIntoView({ behavior: 'smooth' });
             });
@@ -1513,7 +1513,7 @@
             btn.addEventListener('click', async () => {
                 const id = parseInt(btn.dataset.id, 10);
                 const nombre = btn.dataset.nombre;
-                if (!confirm(`¿Eliminar definitivamente el aula '${nombre}' (#${id})?`)) {
+                if (!confirm(`¿Eliminar definitivamente el espacio '${nombre}'?`)) {
                     return;
                 }
                 btn.disabled = true;

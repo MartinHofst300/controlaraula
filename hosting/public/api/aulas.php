@@ -405,6 +405,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nuevaActiva = ((int) $aula['activa'] === 1) ? 0 : 1;
         $stmtUpd = $pdo->prepare("UPDATE aulas SET activa = :activa WHERE id = :id");
         $stmtUpd->execute([':activa' => $nuevaActiva, ':id' => $aulaId]);
+        $stmtUpdUsr = $pdo->prepare("UPDATE usuarios SET activo = :activa WHERE aula_id = :id AND rol = 'aula'");
+        $stmtUpdUsr->execute([':activa' => $nuevaActiva, ':id' => $aulaId]);
 
         $texto = $nuevaActiva === 1 ? 'activada' : 'desactivada';
         registrarEvento($pdo, $auth['origen'], 'ESTADO_AULA', "Aula '{$aula['nombre']}' #{$aulaId} {$texto} por {$auth['usuario']}", $aulaId);
