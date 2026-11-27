@@ -101,7 +101,7 @@ if ($rol === 'aula') {
             } catch (e) {}
         })();
     </script>
-    <link rel="stylesheet" href="assets/css/estilos.css">
+    <link rel="stylesheet" href="assets/css/estilos.css?v=20261126">
 </head>
 <body class="bg-body-tertiary">
     <div class="container py-3 panel-contenedor">
@@ -426,19 +426,19 @@ if ($rol === 'aula') {
                             </div>
                         </div>
                         <div id="aulaFormFeedback"></div>
-                        <div class="tabla-contenedor table-responsive">
-                            <table class="table table-striped table-hover align-middle mb-0">
-                                <thead class="table-light">
+                        <div class="tabla-contenedor table-responsive border rounded-3">
+                            <table class="table table-hover align-middle mb-0 tabla-espacios">
+                                <thead class="tabla-encabezado">
                                     <tr>
-                                        <th>Espacio / Nombre</th>
+                                        <th>Nombre</th>
                                         <th>Tipo</th>
-                                        <th>Cuenta Acceso</th>
+                                        <th>Cuenta de Acceso</th>
                                         <th>Estado</th>
-                                        <th>Acciones</th>
+                                        <th class="text-end">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablaAulasBody">
-                                    <tr><td colspan="5" class="text-center py-3">Cargando listado de espacios...</td></tr>
+                                    <tr><td colspan="5" class="text-center py-4 text-body-secondary">Cargando listado de espacios...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -558,9 +558,9 @@ if ($rol === 'aula') {
                         <div class="seccion-encabezado">
                             <h3 class="h6 fw-bold mb-0">Auditoría de Eventos del Sistema</h3>
                         </div>
-                        <div class="tabla-contenedor table-responsive">
-                            <table class="table table-striped table-hover align-middle mb-0">
-                                <thead class="table-light">
+                        <div class="tabla-contenedor table-responsive border rounded-3">
+                            <table class="table table-hover align-middle mb-0 tabla-espacios">
+                                <thead class="tabla-encabezado">
                                     <tr>
                                         <th>Hora</th>
                                         <th>Aula</th>
@@ -835,7 +835,7 @@ if ($rol === 'aula') {
 
     <!-- Bootstrap 5.3 Bundle JS & Script Principal del Panel -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script src="assets/js/panel.js"></script>
-    <script src="assets/js/pwa.js"></script>
+    <script src="assets/js/panel.js?v=20261126"></script>
+    <script src="assets/js/pwa.js?v=20261126"></script>
 </body>
 </html>

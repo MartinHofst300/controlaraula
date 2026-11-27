@@ -783,6 +783,44 @@ html[data-theme="oscuro"] .hw-chip-epson {
     color: var(--text-primary);
 }
 
+/* Tablas del panel de administración adaptadas a modo claro y oscuro */
+.tabla-espacios {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-primary);
+    --bs-table-hover-bg: var(--bg-subtle);
+    --bs-table-border-color: var(--border-subtle);
+}
+
+.tabla-encabezado th {
+    background-color: var(--bg-subtle) !important;
+    color: var(--text-secondary) !important;
+    font-size: calc(11.5px * var(--ui-scale));
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    white-space: nowrap;
+}
+
+.tabla-espacios tbody td {
+    padding: 13px 14px;
+    vertical-align: middle;
+}
+
+.espacio-tabla-icono {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-primary-bg);
+    color: var(--color-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
 .formulario-grilla {
     display: grid;
     grid-template-columns: 1fr;

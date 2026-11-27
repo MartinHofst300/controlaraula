@@ -11,7 +11,7 @@
  * Al cambiar algo importante de este archivo, subir VERSION para renovar la cache.
  */
 
-const VERSION = 'v1.0.0';
+const VERSION = 'v2.0.0';
 const CACHE_ESTATICO = `control-aula-estatico-${VERSION}`;
 const CACHE_CDN = `control-aula-cdn-${VERSION}`;
 const PAGINA_OFFLINE = 'offline.html';
@@ -90,19 +90,16 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Archivos estaticos propios: stale-while-revalidate
+    // Archivos estaticos propios: network-first (siempre toma la ultima version y usa cache solo si no hay red)
     if (url.origin === self.location.origin && /\.(css|js|png|svg|ico|json|woff2?)$/i.test(url.pathname)) {
         event.respondWith(
             caches.open(CACHE_ESTATICO).then((cache) =>
-                cache.match(req, { ignoreSearch: true }).then((enCache) => {
-                    const desdeRed = fetch(req)
-                        .then((resp) => {
-                            if (resp && resp.ok) cache.put(req, resp.clone());
-                            return resp;
-                        })
-                        .catch(() => enCache);
-                    return enCache || desdeRed;
-                })
+                fetch(req)
+                    .then((resp) => {
+                        if (resp && resp.ok) cache.put(req, resp.clone());
+                        return resp;
+                    })
+                    .catch(() => cache.match(req, { ignoreSearch: true }))
             )
         );
     }

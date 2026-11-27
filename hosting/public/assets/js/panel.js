@@ -1444,25 +1444,44 @@
             const tr = document.createElement('tr');
             const esActiva = Number(a.activa) === 1;
             const activaTexto = esActiva ? 'Activa' : 'Inactiva';
-            const btnEstadoClase = esActiva ? 'btn-outline-success fw-bold' : 'btn-outline-secondary';
+            const btnEstadoClase = esActiva ? 'btn-outline-success fw-semibold' : 'btn-outline-secondary';
+            const estadoIcono = esActiva ? 'bi-check-circle-fill' : 'bi-pause-circle';
+            const tipoNombre = a.tipo || 'Aula';
+            const tipoIcono = tipoNombre === 'Laboratorio'
+                ? 'bi-cpu'
+                : (tipoNombre === 'Taller' ? 'bi-tools' : 'bi-door-open');
 
             tr.innerHTML = `
-                <td><strong>${escapeHtml(a.nombre)}</strong></td>
-                <td><span class="rol-tag badge text-bg-secondary">${escapeHtml(a.tipo || 'Aula')}</span></td>
-                <td><code class="codigo-tag">${escapeHtml(a.nombre)}</code></td>
                 <td>
-                    <button type="button" class="btn btn-sm ${btnEstadoClase} btn-toggle-activa-aula" data-id="${a.id}" title="Habilitar o deshabilitar temporalmente este espacio">
-                        ${activaTexto}
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="espacio-tabla-icono"><i class="bi ${tipoIcono}"></i></span>
+                        <span class="fw-semibold">${escapeHtml(a.nombre)}</span>
+                    </div>
+                </td>
+                <td><span class="badge rounded-pill text-bg-secondary px-2 py-1">${escapeHtml(tipoNombre)}</span></td>
+                <td>
+                    <span class="codigo-tag d-inline-flex align-items-center gap-1 px-2 py-1">
+                        <i class="bi bi-person text-secondary"></i>
+                        <span>${escapeHtml(a.nombre)}</span>
+                    </span>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm ${btnEstadoClase} btn-toggle-activa-aula px-2 py-1" data-id="${a.id}" title="Habilitar o deshabilitar temporalmente este espacio">
+                        <i class="bi ${estadoIcono}"></i>
+                        <span>${activaTexto}</span>
                     </button>
                 </td>
-                <td style="white-space:nowrap;">
-                    <button type="button" class="btn btn-outline-primary btn-sm btn-secundario btn-pequeno btn-editar-aula" 
-                        data-id="${a.id}" 
-                        data-nombre="${escapeHtml(a.nombre)}" 
-                        data-tipo="${escapeHtml(a.tipo || 'Aula')}">
-                        <i class="bi bi-pencil"></i> Editar
-                    </button>
-                    ${a.id > 1 ? `<button type="button" class="btn btn-outline-danger btn-sm btn-peligro btn-pequeno btn-eliminar-aula" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Eliminar espacio">Eliminar</button>` : ''}
+                <td class="text-end" style="white-space:nowrap;">
+                    <div class="d-inline-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 btn-editar-aula" 
+                            data-id="${a.id}" 
+                            data-nombre="${escapeHtml(a.nombre)}" 
+                            data-tipo="${escapeHtml(tipoNombre)}">
+                            <i class="bi bi-pencil"></i>
+                            <span>Editar</span>
+                        </button>
+                        ${a.id > 1 ? `<button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 btn-eliminar-aula" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Eliminar espacio"><i class="bi bi-trash"></i><span>Eliminar</span></button>` : ''}
+                    </div>
                 </td>
             `;
 
