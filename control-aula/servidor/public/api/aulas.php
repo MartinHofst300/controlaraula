@@ -163,43 +163,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Las siguientes operaciones son EXCLUSIVAS de Administradores
     requerirRolAdmin($auth);
 
-    // 2. CREAR NUEVO ESPACIO FÍSICO / AULA CON SU CUENTA
+    // 2. CREAR NUEVO ESPACIO FÍSICO / AULA CON SU CUENTA Y COPIA AUTOMÁTICA DE PROTOCOLOS
     if ($operacion === 'crear') {
         $nombre = trim($datos['nombre'] ?? '');
         $tipo = in_array($datos['tipo'] ?? '', ['Aula', 'Laboratorio', 'Taller', 'Otro'], true) ? $datos['tipo'] : 'Aula';
-        $ubicacion = trim($datos['ubicacion'] ?? '');
-        $marcaAire = trim($datos['marca_aire'] ?? 'Star (OEM)');
-        $protoAire = trim($datos['protocolo_aire'] ?? 'COOLIX');
-        $marcaProy = trim($datos['marca_proyector'] ?? 'Epson');
-        $protoProy = trim($datos['protocolo_proyector'] ?? 'EPSON_NEC');
-        $usuarioLogin = trim($datos['usuario'] ?? '');
+        $ubicacion = '';
         $password = trim($datos['password'] ?? '');
-        $clonarOrigen = isset($datos['clonar_origen_id']) && $datos['clonar_origen_id'] !== '' ? (int)$datos['clonar_origen_id'] : -1;
 
         if (empty($nombre)) {
             responderJSON(['ok' => false, 'error' => 'Debe ingresar el nombre del espacio (ej: Aula 102, Lab 2)'], 422);
         }
 
-        // Generar slug para API Key y usuario por defecto
-        $slug = preg_replace('/[^a-z0-9]/', '_', strtolower($nombre));
-        $slug = trim(preg_replace('/_+/', '_', $slug), '_');
-        if (empty($slug)) $slug = 'espacio_' . time();
+        // Heredar automáticamente marca y protocolo desde Aula #1
+        $stmtRef = $pdo->query("SELECT marca_aire, protocolo_aire, marca_proyector, protocolo_proyector FROM aulas WHERE id = 1 LIMIT 1");
+        $refHw = $stmtRef ? $stmtRef->fetch() : false;
+        $marcaAire = $refHw['marca_aire'] ?? 'Star (OEM)';
+        $protoAire = $refHw['protocolo_aire'] ?? 'COOLIX';
+        $marcaProy = $refHw['marca_proyector'] ?? 'Epson';
+        $protoProy = $refHw['protocolo_proyector'] ?? 'EPSON_NEC';
 
-        if (empty($usuarioLogin)) {
-            $usuarioLogin = substr($slug, 0, 20);
-        }
+        // El usuario de acceso es el nombre del espacio
+        $usuarioLogin = $nombre;
 
         // Validar unicidad del usuario
         $stmtUsrCheck = $pdo->prepare('SELECT id FROM usuarios WHERE usuario = :u LIMIT 1');
         $stmtUsrCheck->execute([':u' => $usuarioLogin]);
         if ($stmtUsrCheck->fetch()) {
-            $usuarioLogin .= '_' . rand(10, 99);
+            responderJSON(['ok' => false, 'error' => "Ya existe un espacio o cuenta con el nombre '{$usuarioLogin}'"], 422);
         }
 
         if (empty($password)) {
             $password = 'aula123';
         }
 
+        $slug = preg_replace('/[^a-z0-9]/', '_', strtolower($nombre));
+        $slug = trim(preg_replace('/_+/', '_', $slug), '_') ?: ('espacio_' . time());
         $apiKey = 'esp32_key_' . substr($slug, 0, 12) . '_' . bin2hex(random_bytes(4));
 
         try {
@@ -222,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $nuevoId = (int) $pdo->lastInsertId();
 
-            // Crear cuenta de acceso vinculada a este espacio
+            // Crear cuenta de acceso vinculada a este espacio (usuario = nombre del espacio)
             $stmtInsUsr = $pdo->prepare(
                 "INSERT INTO usuarios (usuario, password_hash, nombre_completo, rol, aula_id, activo, aulas_permitidas)
                  VALUES (:usr, :pass, :nom, 'aula', :aid, 1, :perm)"
@@ -240,39 +238,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->exec("INSERT INTO estado_actual (id, luces, luces_deseadas, luces_reales, aire_temp, aire_modo, aire_fan, proyector_fuente, proyector_volumen, version_fw) VALUES ({$nuevoId}, 0, 0, 0, 24, 'frio', 'auto', 'hdmi1', 50, '1.0.0') ON DUPLICATE KEY UPDATE version_fw = VALUES(version_fw)");
             } catch (Exception $e) {}
 
-            // Clonar códigos IR opcionalmente
+            // Clonar automáticamente los códigos y protocolos IR desde Aula #1 (o plantilla global si Aula #1 no tuviera)
             $totalClonados = 0;
-            if ($clonarOrigen >= 0) {
-                if ($clonarOrigen === 0) {
-                    $stmtCod = $pdo->query("SELECT * FROM codigos_ir WHERE aula_id IS NULL OR aula_id = 0");
-                } else {
-                    $stmtCod = $pdo->prepare("SELECT * FROM codigos_ir WHERE aula_id = :origen_id");
-                    $stmtCod->execute([':origen_id' => $clonarOrigen]);
-                }
-                $codigosAClonar = $stmtCod ? $stmtCod->fetchAll() : [];
-                if (!empty($codigosAClonar)) {
-                    $stmtInsCod = $pdo->prepare(
-                        "INSERT INTO codigos_ir (dispositivo, accion, protocolo, codigo, codigo_hex, bits, repeticiones, pausa_ms, frecuencia_khz, estado_hex, raw, descripcion, aula_id)
-                         VALUES (:disp, :acc, :proto, :cod, :cod_hex, :bits, :rep, :pausa, :freq, :st_hex, :raw, :desc, :aid)"
-                    );
-                    foreach ($codigosAClonar as $c) {
-                        $stmtInsCod->execute([
-                            ':disp' => $c['dispositivo'],
-                            ':acc' => $c['accion'],
-                            ':proto' => $c['protocolo'] ?? 'NEC',
-                            ':cod' => $c['codigo'] ?? ($c['codigo_hex'] ?? ''),
-                            ':cod_hex' => $c['codigo_hex'] ?? ($c['codigo'] ?? ''),
-                            ':bits' => (int)($c['bits'] ?? 32),
-                            ':rep' => (int)($c['repeticiones'] ?? 1),
-                            ':pausa' => (int)($c['pausa_ms'] ?? 100),
-                            ':freq' => (int)($c['frecuencia_khz'] ?? 38),
-                            ':st_hex' => $c['estado_hex'] ?? null,
-                            ':raw' => $c['raw'] ?? null,
-                            ':desc' => $c['descripcion'] ?? '',
-                            ':aid' => $nuevoId
-                        ]);
-                        $totalClonados++;
-                    }
+            $stmtCod = $pdo->query("SELECT * FROM codigos_ir WHERE aula_id = 1");
+            $codigosAClonar = $stmtCod ? $stmtCod->fetchAll() : [];
+            if (empty($codigosAClonar)) {
+                $stmtCodGlobal = $pdo->query("SELECT * FROM codigos_ir WHERE aula_id IS NULL OR aula_id = 0");
+                $codigosAClonar = $stmtCodGlobal ? $stmtCodGlobal->fetchAll() : [];
+            }
+            if (!empty($codigosAClonar)) {
+                $stmtInsCod = $pdo->prepare(
+                    "INSERT INTO codigos_ir (dispositivo, accion, protocolo, codigo, codigo_hex, bits, repeticiones, pausa_ms, frecuencia_khz, estado_hex, raw, descripcion, aula_id)
+                     VALUES (:disp, :acc, :proto, :cod, :cod_hex, :bits, :rep, :pausa, :freq, :st_hex, :raw, :desc, :aid)"
+                );
+                foreach ($codigosAClonar as $c) {
+                    $stmtInsCod->execute([
+                        ':disp' => $c['dispositivo'],
+                        ':acc' => $c['accion'],
+                        ':proto' => $c['protocolo'] ?? 'NEC',
+                        ':cod' => $c['codigo'] ?? ($c['codigo_hex'] ?? ''),
+                        ':cod_hex' => $c['codigo_hex'] ?? ($c['codigo'] ?? ''),
+                        ':bits' => (int)($c['bits'] ?? 32),
+                        ':rep' => (int)($c['repeticiones'] ?? 1),
+                        ':pausa' => (int)($c['pausa_ms'] ?? 100),
+                        ':freq' => (int)($c['frecuencia_khz'] ?? 38),
+                        ':st_hex' => $c['estado_hex'] ?? null,
+                        ':raw' => $c['raw'] ?? null,
+                        ':desc' => $c['descripcion'] ?? '',
+                        ':aid' => $nuevoId
+                    ]);
+                    $totalClonados++;
                 }
             }
 
@@ -310,12 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $nombre = trim($datos['nombre'] ?? '');
         $tipo = in_array($datos['tipo'] ?? '', ['Aula', 'Laboratorio', 'Taller', 'Otro'], true) ? $datos['tipo'] : 'Aula';
-        $ubicacion = trim($datos['ubicacion'] ?? '');
-        $marcaAire = trim($datos['marca_aire'] ?? 'Star (OEM)');
-        $protoAire = trim($datos['protocolo_aire'] ?? 'COOLIX');
-        $marcaProy = trim($datos['marca_proyector'] ?? 'Epson');
-        $protoProy = trim($datos['protocolo_proyector'] ?? 'EPSON_NEC');
-        $usuarioLogin = trim($datos['usuario'] ?? '');
+        $usuarioLogin = $nombre;
         $password = trim($datos['password'] ?? '');
 
         if (empty($nombre)) {
@@ -327,19 +317,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $stmtUpd = $pdo->prepare(
                 "UPDATE aulas 
-                 SET nombre = :nombre, tipo = :tipo, ubicacion = :ubicacion, 
-                     marca_aire = :marca_aire, protocolo_aire = :proto_aire, 
-                     marca_proyector = :marca_proy, protocolo_proyector = :proto_proy 
+                 SET nombre = :nombre, tipo = :tipo 
                  WHERE id = :id"
             );
             $stmtUpd->execute([
                 ':nombre' => $nombre,
                 ':tipo' => $tipo,
-                ':ubicacion' => $ubicacion,
-                ':marca_aire' => $marcaAire,
-                ':proto_aire' => $protoAire,
-                ':marca_proy' => $marcaProy,
-                ':proto_proy' => $protoProy,
                 ':id' => $aulaId
             ]);
 

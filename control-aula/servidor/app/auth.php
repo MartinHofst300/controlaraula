@@ -45,8 +45,21 @@ function obtenerIPCliente() {
 function autenticarCredencialesUsuario($pdo, $usuario, $password) {
     try {
         asegurarColumnasExtendidas($pdo);
-        $stmt = $pdo->prepare('SELECT id, usuario, password_hash, nombre_completo, rol, aula_id, activo FROM usuarios WHERE usuario = :usuario LIMIT 1');
-        $stmt->execute([':usuario' => $usuario]);
+        $stmt = $pdo->prepare(
+            "SELECT id, usuario, password_hash, nombre_completo, rol, aula_id, activo
+             FROM usuarios
+             WHERE LOWER(usuario) = LOWER(:u1)
+                OR LOWER(nombre_completo) = LOWER(:u2)
+                OR LOWER(REPLACE(usuario, ' ', '')) = LOWER(REPLACE(:u3, ' ', ''))
+                OR LOWER(REPLACE(nombre_completo, ' ', '')) = LOWER(REPLACE(:u4, ' ', ''))
+             LIMIT 1"
+        );
+        $stmt->execute([
+            ':u1' => $usuario,
+            ':u2' => $usuario,
+            ':u3' => $usuario,
+            ':u4' => $usuario
+        ]);
         $fila = $stmt->fetch();
 
         if ($fila) {

@@ -1380,7 +1380,6 @@
                             ${tipoTag}
                             ${esAulaActiva ? '<span class="badge text-bg-primary">ACTUAL</span>' : ''}
                         </h4>
-                        <span class="text-body-secondary small">${escapeHtml(a.ubicacion || 'Sin ubicación')}</span>
                     </div>
                     ${onlineBadge}
                 </div>
@@ -1437,7 +1436,7 @@
         tablaAulasBody.innerHTML = '';
 
         if (!aulas || aulas.length === 0) {
-            tablaAulasBody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">No hay espacios registrados</td></tr>';
+            tablaAulasBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No hay espacios registrados</td></tr>';
             return;
         }
 
@@ -1450,87 +1449,24 @@
                 <td><strong>#${a.id}</strong></td>
                 <td><strong>${escapeHtml(a.nombre)}</strong></td>
                 <td><span class="rol-tag badge text-bg-secondary">${escapeHtml(a.tipo || 'Aula')}</span></td>
-                <td>${escapeHtml(a.ubicacion || '--')}</td>
-                <td><code class="codigo-tag">${escapeHtml(a.usuario_acceso || '--')}</code></td>
-                <td>
-                    <div class="d-flex align-items-center gap-1">
-                        <code class="codigo-tag" style="max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(a.api_key_esp32 || '')}">${escapeHtml(a.api_key_esp32 || '--')}</code>
-                        <button type="button" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno btn-copiar-key" data-key="${escapeHtml(a.api_key_esp32 || '')}" title="Copiar API Key">
-                            <i class="bi bi-clipboard"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno btn-regen-key" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Regenerar API Key">
-                            <i class="bi bi-arrow-clockwise"></i>
-                        </button>
-                    </div>
-                </td>
+                <td><code class="codigo-tag">${escapeHtml(a.nombre)}</code></td>
                 <td>
                     <button type="button" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno btn-toggle-activa-aula" data-id="${a.id}" style="${activaClase}">
                         ${activaTexto}
                     </button>
                 </td>
-                <td><span class="codigo-tag">${a.codigos_ir_count || 0} códigos</span></td>
                 <td style="white-space:nowrap;">
                     <button type="button" class="btn btn-outline-primary btn-sm btn-secundario btn-pequeno btn-editar-aula" 
                         data-id="${a.id}" 
                         data-nombre="${escapeHtml(a.nombre)}" 
-                        data-tipo="${escapeHtml(a.tipo || 'Aula')}" 
-                        data-ubicacion="${escapeHtml(a.ubicacion || '')}" 
-                        data-usuario="${escapeHtml(a.usuario_acceso || '')}"
-                        data-marca-aire="${escapeHtml(a.hardware?.marca_aire || 'Star (OEM)')}"
-                        data-proto-aire="${escapeHtml(a.hardware?.protocolo_aire || 'COOLIX')}"
-                        data-marca-proy="${escapeHtml(a.hardware?.marca_proyector || 'Epson')}"
-                        data-proto-proy="${escapeHtml(a.hardware?.protocolo_proyector || 'EPSON_NEC')}">
+                        data-tipo="${escapeHtml(a.tipo || 'Aula')}">
                         <i class="bi bi-pencil"></i> Editar
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm btn-secundario btn-pequeno btn-clonar-aula" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Clonar plantilla de códigos IR">
-                        Clonar IR
                     </button>
                     ${a.id > 1 ? `<button type="button" class="btn btn-outline-danger btn-sm btn-peligro btn-pequeno btn-eliminar-aula" data-id="${a.id}" data-nombre="${escapeHtml(a.nombre)}" title="Eliminar espacio">Eliminar</button>` : ''}
                 </td>
             `;
 
             tablaAulasBody.appendChild(tr);
-        });
-
-        tablaAulasBody.querySelectorAll('.btn-copiar-key').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const key = btn.dataset.key;
-                if (!key) return;
-                navigator.clipboard.writeText(key).then(() => {
-                    alert(`API Key copiada al portapapeles:\n\n${key}\n\nConfigurala en el ESP32 de esta aula.`);
-                }).catch(() => {
-                    prompt('Copia esta API Key:', key);
-                });
-            });
-        });
-
-        tablaAulasBody.querySelectorAll('.btn-regen-key').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = parseInt(btn.dataset.id, 10);
-                const nombre = btn.dataset.nombre;
-                if (!confirm(`¿Regenerar la API Key para '${nombre}'? El ESP32 actual perderá conexión hasta que se actualice su clave.`)) {
-                    return;
-                }
-                btn.disabled = true;
-                try {
-                    const res = await fetch('api/aulas.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-                        body: JSON.stringify({ operacion: 'regenerar_key', id: id, csrf_token: csrfToken })
-                    });
-                    const d = await res.json();
-                    if (d.ok) {
-                        alert(`Nueva API Key generada:\n\n${d.api_key_esp32}`);
-                        cargarAulas();
-                    } else {
-                        alert(d.error || 'Error al regenerar API Key');
-                    }
-                } catch (e) {
-                    alert('Error de conexión');
-                } finally {
-                    btn.disabled = false;
-                }
-            });
         });
 
         tablaAulasBody.querySelectorAll('.btn-toggle-activa-aula').forEach(btn => {
@@ -1562,67 +1498,14 @@
                 aulaIdInput.value = btn.dataset.id;
                 aulaNombre.value = btn.dataset.nombre;
                 if (aulaTipo) aulaTipo.value = btn.dataset.tipo || 'Aula';
-                aulaUbicacion.value = btn.dataset.ubicacion || '';
-                const elMarcaAire = document.getElementById('aulaMarcaAire');
-                if (elMarcaAire) elMarcaAire.value = btn.dataset.marcaAire || 'Star (OEM)';
-                const elProtoAire = document.getElementById('aulaProtocoloAire');
-                if (elProtoAire) elProtoAire.value = btn.dataset.protoAire || 'COOLIX';
-                const elMarcaProy = document.getElementById('aulaMarcaProyector');
-                if (elMarcaProy) elMarcaProy.value = btn.dataset.marcaProy || 'Epson';
-                const elProtoProy = document.getElementById('aulaProtocoloProyector');
-                if (elProtoProy) elProtoProy.value = btn.dataset.protoProy || 'EPSON_NEC';
-                if (aulaUsuario) aulaUsuario.value = btn.dataset.usuario || '';
                 if (aulaPassword) {
                     aulaPassword.value = '';
                     aulaPassword.placeholder = 'Dejar vacío para no modificarla';
                 }
                 if (labelAulaPassword) labelAulaPassword.textContent = 'Nueva Contraseña (opcional)';
-                if (contenedorClonarCodigos) contenedorClonarCodigos.style.display = 'none';
                 tituloFormAula.textContent = `Editar espacio #${btn.dataset.id} - ${btn.dataset.nombre}`;
                 textoBtnGuardarAula.textContent = 'Actualizar Espacio';
                 formAula.scrollIntoView({ behavior: 'smooth' });
-            });
-        });
-
-        tablaAulasBody.querySelectorAll('.btn-clonar-aula').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const destinoId = parseInt(btn.dataset.id, 10);
-                const destinoNombre = btn.dataset.nombre;
-                const origen = prompt(
-                    `Clonar plantilla de códigos IR hacia '${destinoNombre}' (#${destinoId}):\n\n` +
-                    `Ingresá '0' para clonar la Plantilla Global por defecto, o el ID del aula existente origen:`,
-                    '0'
-                );
-                if (origen === null) return;
-                const origenId = parseInt(origen, 10);
-                if (isNaN(origenId) || origenId < 0) {
-                    alert('Origen inválido');
-                    return;
-                }
-                btn.disabled = true;
-                try {
-                    const res = await fetch('api/aulas.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-                        body: JSON.stringify({
-                            operacion: 'clonar_codigos',
-                            origen_aula_id: origenId,
-                            destino_aula_id: destinoId,
-                            csrf_token: csrfToken
-                        })
-                    });
-                    const d = await res.json();
-                    if (d.ok) {
-                        alert(d.mensaje);
-                        cargarAulas();
-                    } else {
-                        alert(d.error || 'Error al clonar códigos');
-                    }
-                } catch (e) {
-                    alert('Error de conexión');
-                } finally {
-                    btn.disabled = false;
-                }
             });
         });
 
@@ -1630,7 +1513,7 @@
             btn.addEventListener('click', async () => {
                 const id = parseInt(btn.dataset.id, 10);
                 const nombre = btn.dataset.nombre;
-                if (!confirm(`¿Eliminar definitivamente el aula '${nombre}' (#${id})? Se borrarán también sus códigos IR asociados.`)) {
+                if (!confirm(`¿Eliminar definitivamente el aula '${nombre}' (#${id})?`)) {
                     return;
                 }
                 btn.disabled = true;
@@ -2534,25 +2417,16 @@
             }
 
             const id = parseInt(aulaIdInput ? aulaIdInput.value : '0', 10);
-            const elMarcaAire = document.getElementById('aulaMarcaAire');
-            const elProtoAire = document.getElementById('aulaProtocoloAire');
-            const elMarcaProy = document.getElementById('aulaMarcaProyector');
-            const elProtoProy = document.getElementById('aulaProtocoloProyector');
-
+            const nombreVal = aulaNombre ? aulaNombre.value.trim() : '';
             const payload = {
                 operacion: id > 0 ? 'editar' : 'crear',
                 id: id,
                 aula_id: id,
-                nombre: aulaNombre ? aulaNombre.value.trim() : '',
+                nombre: nombreVal,
                 tipo: aulaTipo ? aulaTipo.value : 'Aula',
-                ubicacion: aulaUbicacion ? aulaUbicacion.value.trim() : '',
-                marca_aire: elMarcaAire ? elMarcaAire.value : 'Star (OEM)',
-                protocolo_aire: elProtoAire ? elProtoAire.value : 'COOLIX',
-                marca_proyector: elMarcaProy ? elMarcaProy.value : 'Epson',
-                protocolo_proyector: elProtoProy ? elProtoProy.value : 'EPSON_NEC',
-                usuario: aulaUsuario ? aulaUsuario.value.trim() : '',
+                usuario: nombreVal,
                 password: aulaPassword ? aulaPassword.value : '',
-                clonar_origen_id: aulaClonarCodigos ? aulaClonarCodigos.value : 0,
+                clonar_origen_id: 1,
                 csrf_token: csrfToken
             };
 

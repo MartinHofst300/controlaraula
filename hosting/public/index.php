@@ -461,7 +461,7 @@ if ($rol === 'aula') {
                         <div class="seccion-encabezado">
                             <div>
                                 <h3 class="h6 fw-bold mb-1">Catálogo de Espacios Físicos y Cuentas</h3>
-                                <p class="text-body-secondary small mb-0">Configure aulas, laboratorios, talleres, cuentas de acceso exclusivas y tokens de comunicación con el hardware ESP32.</p>
+                                <p class="text-body-secondary small mb-0">Configure aulas, laboratorios, talleres y sus cuentas de acceso.</p>
                             </div>
                         </div>
                         <div id="aulaFormFeedback"></div>
@@ -472,16 +472,13 @@ if ($rol === 'aula') {
                                         <th>ID</th>
                                         <th>Espacio / Nombre</th>
                                         <th>Tipo</th>
-                                        <th>Ubicación</th>
                                         <th>Cuenta Acceso</th>
-                                        <th>API Key ESP32</th>
                                         <th>Estado</th>
-                                        <th>Códigos IR</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablaAulasBody">
-                                    <tr><td colspan="9" class="text-center py-3">Cargando listado de espacios...</td></tr>
+                                    <tr><td colspan="6" class="text-center py-3">Cargando listado de espacios...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -493,7 +490,7 @@ if ($rol === 'aula') {
                                 <input type="hidden" id="aulaIdInput" value="0">
                                 <div class="formulario-grilla">
                                     <div class="campo-grupo col-span-2">
-                                        <label for="aulaNombre" class="form-label">Nombre del Espacio</label>
+                                        <label for="aulaNombre" class="form-label">Nombre del Espacio (y Usuario de Acceso)</label>
                                         <input type="text" class="form-control" id="aulaNombre" placeholder="ej. Aula 102, Laboratorio 2, Taller..." required>
                                     </div>
                                     <div class="campo-grupo">
@@ -506,58 +503,8 @@ if ($rol === 'aula') {
                                         </select>
                                     </div>
                                     <div class="campo-grupo">
-                                        <label for="aulaUbicacion" class="form-label">Ubicación / Sector</label>
-                                        <input type="text" class="form-control" id="aulaUbicacion" placeholder="ej. Planta Baja, 1er Piso">
-                                    </div>
-                                    <div class="campo-grupo col-span-2">
-                                        <label for="aulaUsuario" class="form-label">Usuario de Acceso para este Salón</label>
-                                        <input type="text" class="form-control" id="aulaUsuario" placeholder="ej. aula102, lab2" pattern="[a-zA-Z0-9_.\-]{3,50}">
-                                    </div>
-                                    <div class="campo-grupo col-span-2">
                                         <label for="aulaPassword" id="labelAulaPassword" class="form-label">Contraseña de Acceso</label>
                                         <input type="password" class="form-control" id="aulaPassword" placeholder="Dejar en blanco para mantener o default aula123">
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="aulaMarcaAire" class="form-label">Marca / Perfil Aire</label>
-                                        <select id="aulaMarcaAire" class="form-select">
-                                            <option value="Star (OEM)" selected>Star (OEM Universal)</option>
-                                            <option value="Star-Trak">Star-Trak</option>
-                                            <option value="StarVision">StarVision</option>
-                                            <option value="CoolStar">CoolStar</option>
-                                            <option value="Universal">Universal / Otra</option>
-                                        </select>
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="aulaProtocoloAire" class="form-label">Protocolo Aire</label>
-                                        <select id="aulaProtocoloAire" class="form-select">
-                                            <option value="COOLIX" selected>COOLIX (24 bits)</option>
-                                            <option value="NEC">NEC (32 bits)</option>
-                                            <option value="GREE">GREE</option>
-                                            <option value="TCL112AC">TCL112AC</option>
-                                            <option value="RAW">RAW Personalizado</option>
-                                        </select>
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="aulaMarcaProyector" class="form-label">Marca Proyector</label>
-                                        <select id="aulaMarcaProyector" class="form-select">
-                                            <option value="Epson" selected>Epson</option>
-                                            <option value="Universal">Universal / Otro</option>
-                                        </select>
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="aulaProtocoloProyector" class="form-label">Protocolo Proyector</label>
-                                        <select id="aulaProtocoloProyector" class="form-select">
-                                            <option value="EPSON_NEC" selected>EPSON_NEC (Doble pulso)</option>
-                                            <option value="NEC">NEC Estándar</option>
-                                            <option value="RAW">RAW Personalizado</option>
-                                        </select>
-                                    </div>
-                                    <div class="campo-grupo col-span-4" id="contenedorClonarCodigos">
-                                        <label for="aulaClonarCodigos" class="form-label">Clonar Códigos Infrarrojos (opcional al dar de alta)</label>
-                                        <select id="aulaClonarCodigos" class="form-select">
-                                            <option value="0" selected>Clonar desde Plantilla Global</option>
-                                            <option value="-1">No clonar (comenzar en blanco)</option>
-                                        </select>
                                     </div>
                                 </div>
                                 <div class="d-flex gap-2 mt-2">
