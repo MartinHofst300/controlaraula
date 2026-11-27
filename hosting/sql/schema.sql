@@ -18,7 +18,7 @@ SET foreign_key_checks = 0;
 CREATE TABLE IF NOT EXISTS `aulas` (
   `id` INT AUTO_INCREMENT NOT NULL,
   `nombre` VARCHAR(100) NOT NULL,
-  `tipo` ENUM('Aula','Laboratorio','Taller','Otro') NOT NULL DEFAULT 'Aula',
+  `tipo` VARCHAR(60) NOT NULL DEFAULT 'Aula',
   `ubicacion` VARCHAR(100) DEFAULT '',
   `api_key_esp32` VARCHAR(64) NOT NULL,
   `activa` TINYINT(1) NOT NULL DEFAULT 1,
@@ -54,17 +54,47 @@ INSERT INTO `aulas` (
   `luces`, `aire_encendido`, `aire_temp`, `aire_modo`, `aire_fan`, `aire_swing`,
   `proyector_encendido`, `proyector_fuente`, `proyector_volumen`
 ) VALUES
-(1, 'Aula 101 - General', 'Aula', 'Planta Baja', 'clave_secreta_esp32_aula_101_general_abc12345', 1, 'Star (OEM)', 'COOLIX', 'Epson', 'EPSON_NEC', 0, 0, 24, 'frio', 'auto', 0, 0, 'hdmi1', 50),
-(2, 'Laboratorio 1 - Informática', 'Laboratorio', 'Piso 1 - Ala Norte', 'esp32_key_lab1_inform_5678', 1, 'Star (OEM)', 'COOLIX', 'Epson', 'EPSON_NEC', 0, 0, 22, 'frio', 'medio', 0, 0, 'hdmi1', 60),
-(3, 'Taller de Electrónica', 'Taller', 'Piso 2 - Talleres', 'esp32_key_taller_elect_9012', 1, 'Star (OEM)', 'COOLIX', 'Epson', 'EPSON_NEC', 0, 0, 25, 'frio', 'auto', 0, 0, 'hdmi2', 40)
+(1, 'Aula 101', 'Aula', '', 'clave_secreta_esp32_aula_101_general_abc12345', 1, 'Star (OEM)', 'COOLIX', 'Epson', 'EPSON_NEC', 0, 0, 24, 'frio', 'auto', 0, 0, 'hdmi1', 50),
+(2, 'Laboratorio 1 - Informática', 'Laboratorio', '', 'esp32_key_lab1_inform_5678', 1, 'Star (OEM)', 'COOLIX', 'Epson', 'EPSON_NEC', 0, 0, 22, 'frio', 'medio', 0, 0, 'hdmi1', 60),
+(3, 'Taller de Electrónica', 'Taller', '', 'esp32_key_taller_elect_9012', 1, 'Star (OEM)', 'COOLIX', 'Epson', 'EPSON_NEC', 0, 0, 25, 'frio', 'auto', 0, 0, 'hdmi2', 40)
 ON DUPLICATE KEY UPDATE
   `nombre` = VALUES(`nombre`),
   `tipo` = VALUES(`tipo`),
-  `ubicacion` = VALUES(`ubicacion`),
   `marca_aire` = VALUES(`marca_aire`),
   `protocolo_aire` = VALUES(`protocolo_aire`),
   `marca_proyector` = VALUES(`marca_proyector`),
   `protocolo_proyector` = VALUES(`protocolo_proyector`);
+
+-- 1B. Tabla: tipos_espacio (Categorías personalizadas de espacios)
+CREATE TABLE IF NOT EXISTS `tipos_espacio` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(60) NOT NULL,
+  `icono` VARCHAR(50) NOT NULL DEFAULT 'bi-door-open',
+  `creado_en` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tipo_espacio_nombre` (`nombre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `tipos_espacio` (`nombre`, `icono`) VALUES
+('Aula', 'bi-door-open'),
+('Laboratorio', 'bi-cpu'),
+('Taller', 'bi-tools'),
+('SUM', 'bi-people'),
+('Biblioteca', 'bi-book'),
+('Otro', 'bi-building');
+
+-- 1C. Tabla: horarios_cierre (Reglas de apagado automático para ahorro energético)
+CREATE TABLE IF NOT EXISTS `horarios_cierre` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(100) NOT NULL,
+  `hora` VARCHAR(5) NOT NULL,
+  `dias` VARCHAR(30) NOT NULL DEFAULT '1,2,3,4,5',
+  `accion` VARCHAR(20) NOT NULL DEFAULT 'todo',
+  `activo` TINYINT(1) NOT NULL DEFAULT 1,
+  `ultima_ejecucion` DATE DEFAULT NULL,
+  `creado_en` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Tabla: dispositivos_ir
 CREATE TABLE IF NOT EXISTS `dispositivos_ir` (
@@ -253,7 +283,7 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
 --  * taller1  / taller123 (rol: aula, vinculado a Taller de Electrónica)
 INSERT INTO `usuarios` (`usuario`, `password_hash`, `nombre_completo`, `rol`, `aula_id`, `activo`, `aulas_permitidas`) VALUES
 ('admin', '$2y$10$2jKPHsivzyJCV8ckLvSi3eymLTnwp9SlsPVGPaHELdJjNVmCYLxTS', 'Administrador General', 'admin', NULL, 1, 'todas'),
-('aula101', '$2y$10$/48eB9JyldUD4X.j/Uk2Geg4A78aNbe6s2w0h/xY9fL71fhXZKSc.', 'Aula 101 - General', 'aula', 1, 1, '[1]'),
+('aula101', '$2y$10$/48eB9JyldUD4X.j/Uk2Geg4A78aNbe6s2w0h/xY9fL71fhXZKSc.', 'Aula 101', 'aula', 1, 1, '[1]'),
 ('lab1', '$2y$10$TrMD4d0H1w6hdz5ad0CqWeq5TX6uHOO7r1oQYi1AKx7m/XCaT0mdm', 'Laboratorio 1 - Informática', 'aula', 2, 1, '[2]'),
 ('taller1', '$2y$10$qYbZ8/6LOHylr5nml8xky.SdsrcNXY5KNSCDYgPwvKF5AUNGq5.Am', 'Taller de Electrónica', 'aula', 3, 1, '[3]')
 ON DUPLICATE KEY UPDATE
