@@ -1284,6 +1284,20 @@
                     if (selFiltroPrev) filtroCodigosAula.value = selFiltroPrev;
                 }
 
+                // Actualizar filtro de eventos por Aula
+                const filtroLogAula = document.getElementById('filtroLogAula');
+                if (filtroLogAula) {
+                    const selLogPrev = filtroLogAula.value;
+                    filtroLogAula.innerHTML = '<option value="">Todos los espacios</option>';
+                    listaAulas.forEach(a => {
+                        const opt = document.createElement('option');
+                        opt.value = a.id;
+                        opt.textContent = a.nombre;
+                        filtroLogAula.appendChild(opt);
+                    });
+                    if (selLogPrev) filtroLogAula.value = selLogPrev;
+                }
+
                 // Actualizar checkboxes de asignación de aulas en gestión de usuarios
                 if (checkAulasUsuarioContainer) {
                     renderizarCheckboxesAulasUsuario();
@@ -1339,8 +1353,138 @@
         }
     }
 
+    let listaTiposEspacio = [
+        { id: 1, nombre: 'Aula', icono: 'bi-door-open' },
+        { id: 2, nombre: 'Laboratorio', icono: 'bi-cpu' },
+        { id: 3, nombre: 'Taller', icono: 'bi-tools' },
+        { id: 4, nombre: 'SUM', icono: 'bi-people' },
+        { id: 5, nombre: 'Biblioteca', icono: 'bi-book' },
+        { id: 6, nombre: 'Otro', icono: 'bi-building' }
+    ];
+    let filtroEstadoTablero = 'todos';
+
+    function obtenerIconoTipo(tipoNombre) {
+        const encontrado = listaTiposEspacio.find(
+            t => String(t.nombre).toLowerCase() === String(tipoNombre || 'Aula').toLowerCase()
+        );
+        if (encontrado && encontrado.icono) return encontrado.icono;
+        if (tipoNombre === 'Laboratorio') return 'bi-cpu';
+        if (tipoNombre === 'Taller') return 'bi-tools';
+        return 'bi-door-open';
+    }
+
+    function actualizarResumenKPIs(aulas) {
+        const kpiOnline = document.getElementById('kpiOnline');
+        const kpiLuces = document.getElementById('kpiLuces');
+        const kpiAires = document.getElementById('kpiAires');
+        const kpiProyectores = document.getElementById('kpiProyectores');
+        if (!kpiOnline) return;
+
+        const total = aulas.length;
+        let online = 0, luces = 0, aires = 0, proys = 0;
+        aulas.forEach(a => {
+            if (a.online) online++;
+            const est = a.estado || {};
+            if (est.luces === 1) luces++;
+            if (est.aire_encendido === 1) aires++;
+            if (est.proyector_encendido === 1) proys++;
+        });
+        kpiOnline.textContent = `${online} / ${total}`;
+        if (kpiLuces) kpiLuces.textContent = String(luces);
+        if (kpiAires) kpiAires.textContent = String(aires);
+        if (kpiProyectores) kpiProyectores.textContent = String(proys);
+    }
+
+    async function cargarTiposEspacio() {
+        if (!esAdmin) return;
+        try {
+            const res = await fetch('api/tipos_espacio.php');
+            const data = await res.json();
+            if (data.ok && Array.isArray(data.tipos)) {
+                listaTiposEspacio = data.tipos;
+                renderizarTiposEspacio();
+            }
+        } catch (e) {
+            console.error('Error al cargar tipos de espacio:', e);
+        }
+    }
+
+    function renderizarTiposEspacio() {
+        const contChips = document.getElementById('listaTiposEspacio');
+        const selTipoForm = document.getElementById('aulaTipo');
+        const selTipoFiltro = document.getElementById('filtroTableroTipo');
+
+        if (contChips) {
+            contChips.innerHTML = '';
+            listaTiposEspacio.forEach(t => {
+                const chip = document.createElement('span');
+                chip.className = 'tipo-chip';
+                const esBase = String(t.nombre).toLowerCase() === 'aula';
+                chip.innerHTML = `
+                    <i class="bi ${escapeHtml(t.icono || 'bi-building')} text-primary"></i>
+                    <span>${escapeHtml(t.nombre)}</span>
+                    ${!esBase ? `<button type="button" class="tipo-chip-del" data-id="${t.id}" data-nombre="${escapeHtml(t.nombre)}" title="Eliminar tipo">&times;</button>` : ''}
+                `;
+                contChips.appendChild(chip);
+            });
+
+            contChips.querySelectorAll('.tipo-chip-del').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = parseInt(btn.dataset.id, 10);
+                    const nombre = btn.dataset.nombre;
+                    if (!confirm(`¿Eliminar el tipo de espacio '${nombre}'?`)) return;
+                    const fb = document.getElementById('tiposEspacioFeedback');
+                    try {
+                        const res = await fetch('api/tipos_espacio.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                            body: JSON.stringify({ operacion: 'eliminar', id, csrf_token: csrfToken })
+                        });
+                        const d = await res.json();
+                        if (d.ok) {
+                            if (fb) { fb.className = 'alerta alerta-exito'; fb.textContent = d.mensaje; setTimeout(() => { fb.textContent = ''; fb.className = ''; }, 3500); }
+                            cargarTiposEspacio();
+                        } else if (fb) {
+                            fb.className = 'alerta alerta-error';
+                            fb.textContent = d.error || 'No se pudo eliminar el tipo';
+                        }
+                    } catch (err) {
+                        alert('Error de conexión');
+                    }
+                });
+            });
+        }
+
+        if (selTipoForm) {
+            const valPrev = selTipoForm.value || 'Aula';
+            selTipoForm.innerHTML = '';
+            listaTiposEspacio.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.nombre;
+                opt.textContent = t.nombre;
+                selTipoForm.appendChild(opt);
+            });
+            if (Array.from(selTipoForm.options).some(o => o.value === valPrev)) {
+                selTipoForm.value = valPrev;
+            }
+        }
+
+        if (selTipoFiltro) {
+            const valPrevF = selTipoFiltro.value || '';
+            selTipoFiltro.innerHTML = '<option value="">Todos los tipos</option>';
+            listaTiposEspacio.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.nombre;
+                opt.textContent = t.nombre;
+                selTipoFiltro.appendChild(opt);
+            });
+            selTipoFiltro.value = valPrevF;
+        }
+    }
+
     function renderizarTableroAulas(aulas) {
         if (!tableroAulasGrid) return;
+        actualizarResumenKPIs(aulas || []);
         tableroAulasGrid.innerHTML = '';
 
         if (!aulas || aulas.length === 0) {
@@ -1348,7 +1492,35 @@
             return;
         }
 
-        aulas.forEach(a => {
+        // Aplicar filtros del tablero
+        const qTxt = (document.getElementById('filtroTableroTexto')?.value || '').trim().toLowerCase();
+        const qTipo = document.getElementById('filtroTableroTipo')?.value || '';
+
+        const filtradas = aulas.filter(a => {
+            if (qTxt && !String(a.nombre || '').toLowerCase().includes(qTxt) && !String(a.tipo || '').toLowerCase().includes(qTxt)) {
+                return false;
+            }
+            if (qTipo && String(a.tipo || '') !== qTipo) {
+                return false;
+            }
+            if (filtroEstadoTablero === 'online' && !a.online) {
+                return false;
+            }
+            if (filtroEstadoTablero === 'encendidos') {
+                const est = a.estado || {};
+                if (!(est.luces === 1 || est.aire_encendido === 1 || est.proyector_encendido === 1)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        if (filtradas.length === 0) {
+            tableroAulasGrid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-secondary);">No hay espacios que coincidan con el filtro aplicado.</div>';
+            return;
+        }
+
+        filtradas.forEach(a => {
             const card = document.createElement('div');
             const esAulaActiva = (a.id === aulaActualId);
             const onlineBadge = a.online
@@ -1370,7 +1542,8 @@
                 ? `<span class="badge text-bg-primary">Proyector ON · ${(est.proyector_fuente || 'hdmi1').toUpperCase()}</span>`
                 : '<span class="badge text-bg-secondary">Proyector OFF</span>';
 
-            const tipoTag = `<span class="badge text-bg-light border">${escapeHtml(a.tipo || 'Aula')}</span>`;
+            const tipoIcono = obtenerIconoTipo(a.tipo || 'Aula');
+            const tipoTag = `<span class="badge text-bg-secondary"><i class="bi ${escapeHtml(tipoIcono)} me-1"></i>${escapeHtml(a.tipo || 'Aula')}</span>`;
 
             card.innerHTML = `
                 <div class="d-flex justify-content-between align-items-start">
@@ -1447,9 +1620,7 @@
             const btnEstadoClase = esActiva ? 'btn-outline-success fw-semibold' : 'btn-outline-secondary';
             const estadoIcono = esActiva ? 'bi-check-circle-fill' : 'bi-pause-circle';
             const tipoNombre = a.tipo || 'Aula';
-            const tipoIcono = tipoNombre === 'Laboratorio'
-                ? 'bi-cpu'
-                : (tipoNombre === 'Taller' ? 'bi-tools' : 'bi-door-open');
+            const tipoIcono = obtenerIconoTipo(tipoNombre);
 
             tr.innerHTML = `
                 <td>
@@ -1623,12 +1794,15 @@
     function resetFormularioUsuario() {
         if (!formUsuario) return;
         formUsuario.reset();
-        document.getElementById('usrId').value = '0';
+        const elId = document.getElementById('usrId');
+        if (elId) elId.value = '0';
+        const elRol = document.getElementById('usrRol');
+        if (elRol) elRol.value = 'admin';
         if (tituloFormUsuario) {
-            tituloFormUsuario.textContent = 'Dar de alta nueva cuenta (Aula o Administrador)';
+            tituloFormUsuario.textContent = 'Dar de alta nuevo administrador';
         }
         if (textoBtnGuardarUsuario) {
-            textoBtnGuardarUsuario.textContent = 'Crear Cuenta';
+            textoBtnGuardarUsuario.textContent = 'Crear Administrador';
         }
         if (labelUsrPassword) {
             labelUsrPassword.textContent = 'Contraseña (obligatoria)';
@@ -1638,7 +1812,6 @@
             inputPass.required = true;
             inputPass.placeholder = 'Mínimo 4 caracteres';
         }
-        renderizarCheckboxesAulasUsuario('todas');
     }
 
     async function cargarUsuarios() {
@@ -1649,75 +1822,60 @@
             const data = await res.json();
 
             if (data.ok && Array.isArray(data.usuarios)) {
+                const admins = data.usuarios.filter(u => u.rol === 'admin');
                 tablaUsuariosBody.innerHTML = '';
-                data.usuarios.forEach(u => {
+                if (admins.length === 0) {
+                    tablaUsuariosBody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-body-secondary">Sin cuentas administrativas registradas</td></tr>';
+                    return;
+                }
+                admins.forEach(u => {
                     const tr = document.createElement('tr');
                     const esMiUsuario = (u.id === currentUserId);
-                    const rolBadge = u.rol === 'admin'
-                        ? '<span class="rol-tag">ADMIN</span>'
-                        : '<span class="estado-pastilla on">AULA / ESPACIO</span>';
                     const estadoBadge = u.activo === 1
-                        ? '<span class="estado-pastilla on">ACTIVO</span>'
-                        : '<span class="estado-pastilla off">INACTIVO</span>';
-
-                    // Formatear texto de aulas permitidas
-                    let aulasTexto = 'Todas';
-                    if (u.rol === 'admin' || u.aulas_permitidas === 'todas' || !u.aulas_permitidas) {
-                        aulasTexto = '<span class="codigo-tag">Todas las aulas</span>';
-                    } else {
-                        try {
-                            const ids = typeof u.aulas_permitidas === 'string' ? JSON.parse(u.aulas_permitidas) : u.aulas_permitidas;
-                            if (Array.isArray(ids) && ids.length > 0) {
-                                const nombres = ids.map(id => {
-                                    const match = listaAulas.find(a => a.id === id);
-                                    return match ? match.nombre : `#${id}`;
-                                });
-                                aulasTexto = `<span class="codigo-tag" title="${escapeHtml(nombres.join(', '))}">${escapeHtml(nombres.join(', '))}</span>`;
-                            } else {
-                                aulasTexto = '<span class="codigo-tag">Todas las aulas</span>';
-                            }
-                        } catch (err) {
-                            aulasTexto = '<span class="codigo-tag">Todas</span>';
-                        }
-                    }
+                        ? '<span class="badge text-bg-success px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Activo</span>'
+                        : '<span class="badge text-bg-secondary px-2 py-1"><i class="bi bi-pause-circle me-1"></i>Inactivo</span>';
 
                     let botonesAccion = `
-                        <button type="button" class="btn btn-secundario btn-pequeno btn-editar-usuario"
+                        <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 btn-editar-usuario"
                             data-id="${u.id}"
                             data-usuario="${escapeHtml(u.usuario)}"
                             data-nombre="${escapeHtml(u.nombre_completo)}"
-                            data-rol="${escapeHtml(u.rol)}"
-                            data-activo="${u.activo}"
-                            data-aulas="${escapeHtml(u.aulas_permitidas || 'todas')}">
-                            Editar
+                            data-rol="admin"
+                            data-activo="${u.activo}">
+                            <i class="bi bi-pencil"></i> Editar
                         </button>
                     `;
 
                     if (!esMiUsuario) {
                         botonesAccion += `
-                            <button type="button" class="btn btn-secundario btn-pequeno btn-toggle-usuario"
+                            <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 btn-toggle-usuario"
                                 data-id="${u.id}"
                                 data-usuario="${escapeHtml(u.usuario)}"
                                 title="${u.activo === 1 ? 'Desactivar acceso' : 'Reactivar acceso'}">
                                 ${u.activo === 1 ? 'Desactivar' : 'Activar'}
                             </button>
-                            <button type="button" class="btn btn-peligro btn-pequeno btn-eliminar-usuario"
+                            <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 btn-eliminar-usuario"
                                 data-id="${u.id}"
                                 data-usuario="${escapeHtml(u.usuario)}">
-                                Eliminar
+                                <i class="bi bi-trash"></i> Eliminar
                             </button>
                         `;
                     } else {
-                        botonesAccion += ` <span style="font-size:11px; color:var(--text-muted); margin-left:6px;">(Sesión actual)</span>`;
+                        botonesAccion += ` <span class="badge text-bg-light border text-secondary">Sesión actual</span>`;
                     }
 
                     tr.innerHTML = `
-                        <td><strong>${escapeHtml(u.usuario)}</strong></td>
-                        <td>${escapeHtml(u.nombre_completo)}</td>
-                        <td>${rolBadge}</td>
+                        <td>
+                            <span class="codigo-tag d-inline-flex align-items-center gap-1 px-2 py-1">
+                                <i class="bi bi-shield-lock text-primary"></i>
+                                <strong>${escapeHtml(u.usuario)}</strong>
+                            </span>
+                        </td>
+                        <td class="fw-medium">${escapeHtml(u.nombre_completo)}</td>
                         <td>${estadoBadge}</td>
-                        <td>${aulasTexto}</td>
-                        <td style="white-space:nowrap;">${botonesAccion}</td>
+                        <td class="text-end" style="white-space:nowrap;">
+                            <div class="d-inline-flex align-items-center gap-2">${botonesAccion}</div>
+                        </td>
                     `;
                     tablaUsuariosBody.appendChild(tr);
                 });
@@ -2156,19 +2314,147 @@
     }
 
     // -------------------------------------------------------------------------
-    // 12. REGISTRO DE EVENTOS (LOG - EXCLUSIVO ADMIN)
+    // 11B. HORARIOS DE CIERRE AUTOMÁTICO (AHORRO ENERGÉTICO - ADMIN)
     // -------------------------------------------------------------------------
+    async function cargarHorarios() {
+        const tbody = document.getElementById('tablaHorariosBody');
+        const horaBadge = document.getElementById('horaServidorBadge');
+        if (!esAdmin || !tbody) return;
+
+        try {
+            const res = await fetch('api/horarios.php');
+            const data = await res.json();
+            if (data.ok) {
+                if (horaBadge && data.hora_servidor) {
+                    horaBadge.innerHTML = `<i class="bi bi-clock me-1"></i>Hora servidor: ${escapeHtml(data.hora_servidor)}`;
+                }
+                const reglas = data.horarios || [];
+                tbody.innerHTML = '';
+                if (reglas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-body-secondary">Todavía no hay horarios programados. Agregá uno abajo (ej. Cierre Turno Tarde a las 18:30).</td></tr>';
+                    return;
+                }
+
+                const mapaDias = {
+                    '1,2,3,4,5': 'Lunes a Viernes',
+                    '1,2,3,4,5,6': 'Lunes a Sábado',
+                    '1,2,3,4,5,6,7': 'Todos los días'
+                };
+                const mapaAccion = {
+                    'todo': 'Apagar Todo',
+                    'luces': 'Solo Luces',
+                    'aire': 'Solo Aires',
+                    'proyector': 'Solo Proyectores'
+                };
+
+                reglas.forEach(h => {
+                    const tr = document.createElement('tr');
+                    const activo = Number(h.activo) === 1;
+                    tr.innerHTML = `
+                        <td class="fw-semibold">${escapeHtml(h.nombre)}</td>
+                        <td><span class="codigo-tag fw-bold"><i class="bi bi-clock me-1 text-primary"></i>${escapeHtml(h.hora)} hs</span></td>
+                        <td>${escapeHtml(mapaDias[h.dias] || h.dias)}</td>
+                        <td><span class="badge text-bg-secondary">${escapeHtml(mapaAccion[h.accion] || h.accion)}</span></td>
+                        <td>
+                            <button type="button" class="btn btn-sm ${activo ? 'btn-outline-success fw-semibold' : 'btn-outline-secondary'} btn-toggle-horario px-2 py-1" data-id="${h.id}">
+                                <i class="bi ${activo ? 'bi-check-circle-fill' : 'bi-pause-circle'}"></i>
+                                <span>${activo ? 'Activo' : 'Pausado'}</span>
+                            </button>
+                        </td>
+                        <td class="text-end" style="white-space:nowrap;">
+                            <div class="d-inline-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 btn-probar-horario" data-id="${h.id}" data-nombre="${escapeHtml(h.nombre)}" title="Ejecutar ahora sobre todas las aulas activas">
+                                    <i class="bi bi-play-fill"></i> Probar
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 btn-eliminar-horario" data-id="${h.id}" data-nombre="${escapeHtml(h.nombre)}">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                tbody.querySelectorAll('.btn-toggle-horario').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        btn.disabled = true;
+                        await fetch('api/horarios.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                            body: JSON.stringify({ operacion: 'toggle', id: parseInt(btn.dataset.id, 10), csrf_token: csrfToken })
+                        });
+                        cargarHorarios();
+                    });
+                });
+
+                tbody.querySelectorAll('.btn-probar-horario').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        if (!confirm(`¿Ejecutar ahora la regla '${btn.dataset.nombre}' sobre todas las aulas activas?`)) return;
+                        btn.disabled = true;
+                        const resExec = await fetch('api/horarios.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                            body: JSON.stringify({ operacion: 'ejecutar_ahora', id: parseInt(btn.dataset.id, 10), csrf_token: csrfToken })
+                        });
+                        const d = await resExec.json();
+                        const fb = document.getElementById('horarioFormFeedback');
+                        if (fb) {
+                            fb.className = d.ok ? 'alerta alerta-exito' : 'alerta alerta-error';
+                            fb.textContent = d.mensaje || d.error || '';
+                            setTimeout(() => { fb.textContent = ''; fb.className = ''; }, 4000);
+                        }
+                        btn.disabled = false;
+                        cargarAulas();
+                        consultarEstado();
+                        cargarLog();
+                    });
+                });
+
+                tbody.querySelectorAll('.btn-eliminar-horario').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        if (!confirm(`¿Eliminar el horario '${btn.dataset.nombre}'?`)) return;
+                        btn.disabled = true;
+                        await fetch('api/horarios.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                            body: JSON.stringify({ operacion: 'eliminar', id: parseInt(btn.dataset.id, 10), csrf_token: csrfToken })
+                        });
+                        cargarHorarios();
+                    });
+                });
+            }
+        } catch (e) {
+            console.error('Error al cargar horarios:', e);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 12. REGISTRO DE EVENTOS CON FILTROS Y EXPORTAR CSV (EXCLUSIVO ADMIN)
+    // -------------------------------------------------------------------------
+    function construirQueryLog() {
+        const params = new URLSearchParams();
+        const aulaVal = document.getElementById('filtroLogAula')?.value || '';
+        const evVal = document.getElementById('filtroLogEvento')?.value || '';
+        const qVal = (document.getElementById('filtroLogTexto')?.value || '').trim();
+        if (aulaVal !== '') params.set('aula_id', aulaVal);
+        if (evVal !== '') params.set('evento', evVal);
+        if (qVal !== '') params.set('q', qVal);
+        return params;
+    }
+
     async function cargarLog() {
         if (!esAdmin || !tablaLogBody) return;
 
         try {
-            const res = await fetch('api/log.php');
+            const params = construirQueryLog();
+            const url = 'api/log.php' + (params.toString() ? `?${params.toString()}` : '');
+            const res = await fetch(url);
             const data = await res.json();
 
             if (data.ok && Array.isArray(data.eventos)) {
                 tablaLogBody.innerHTML = '';
                 if (data.eventos.length === 0) {
-                    tablaLogBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Sin eventos registrados</td></tr>';
+                    tablaLogBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-body-secondary">Sin eventos que coincidan con el filtro</td></tr>';
                     return;
                 }
 
@@ -2176,7 +2462,7 @@
                     const tr = document.createElement('tr');
                     const aulaTxt = item.aula_nombre 
                         ? escapeHtml(item.aula_nombre) 
-                        : (item.aula_id ? `Aula #${item.aula_id}` : 'General');
+                        : (item.aula_id ? `Espacio #${item.aula_id}` : 'General');
 
                     tr.innerHTML = `
                         <td style="white-space:nowrap;">${formatearFecha(item.creado_en)}</td>
@@ -2210,10 +2496,9 @@
             const destino = btn.dataset.target;
             activarTab(destino);
 
-            if (destino === 'tab-aulas') cargarAulas();
+            if (destino === 'tab-aulas') { cargarTiposEspacio(); cargarAulas(); }
+            if (destino === 'tab-horarios') cargarHorarios();
             if (destino === 'tab-usuarios') cargarUsuarios();
-            if (destino === 'tab-codigos') cargarCodigos();
-            if (destino === 'tab-capturas') cargarCapturas();
             if (destino === 'tab-log') cargarLog();
         });
     });
@@ -2495,6 +2780,164 @@
         });
     }
 
+    // Apagado selectivo global por servicio (Luces / Aires / Proyectores)
+    document.querySelectorAll('.btn-apagar-servicio').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const servicio = btn.dataset.servicio;
+            const etiquetas = { luces: 'todas las LUCES', aire: 'todos los AIRES ACONDICIONADOS', proyector: 'todos los PROYECTORES' };
+            if (!confirm(`¿Confirmás apagar ${etiquetas[servicio] || servicio} en todos los espacios activos?`)) {
+                return;
+            }
+            btn.disabled = true;
+            emitirBeep(520, 80);
+            try {
+                const res = await fetch('api/aulas.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                    body: JSON.stringify({ operacion: 'apagar_servicio', servicio, csrf_token: csrfToken })
+                });
+                const d = await res.json();
+                if (d.ok) {
+                    if (tableroAulasFeedback) {
+                        tableroAulasFeedback.className = 'alerta alerta-exito';
+                        tableroAulasFeedback.textContent = d.mensaje;
+                        setTimeout(() => { tableroAulasFeedback.textContent = ''; tableroAulasFeedback.className = ''; }, 4000);
+                    }
+                    await cargarAulas();
+                    await consultarEstado();
+                    if (esAdmin) cargarLog();
+                } else {
+                    alert(d.error || 'No se pudo completar el apagado selectivo');
+                }
+            } catch (err) {
+                alert('Error de conexión con el servidor');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    });
+
+    // Filtros del Tablero Multi-Aula y clic en KPIs
+    const filtroTableroTexto = document.getElementById('filtroTableroTexto');
+    const filtroTableroTipo = document.getElementById('filtroTableroTipo');
+    if (filtroTableroTexto) filtroTableroTexto.addEventListener('input', () => renderizarTableroAulas(listaAulas));
+    if (filtroTableroTipo) filtroTableroTipo.addEventListener('change', () => renderizarTableroAulas(listaAulas));
+
+    document.querySelectorAll('[data-filtro-estado]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            filtroEstadoTablero = btn.getAttribute('data-filtro-estado') || 'todos';
+            document.querySelectorAll('[data-filtro-estado]').forEach(b => b.classList.toggle('active', b === btn));
+            renderizarTableroAulas(listaAulas);
+        });
+    });
+
+    document.querySelectorAll('[data-kpi-filtro]').forEach(card => {
+        card.addEventListener('click', () => {
+            const target = card.getAttribute('data-kpi-filtro');
+            filtroEstadoTablero = (filtroEstadoTablero === target) ? 'todos' : target;
+            document.querySelectorAll('[data-filtro-estado]').forEach(b => {
+                b.classList.toggle('active', b.getAttribute('data-filtro-estado') === filtroEstadoTablero);
+            });
+            renderizarTableroAulas(listaAulas);
+        });
+    });
+
+    // Formulario de Nuevo Tipo de Espacio
+    const formTipoEspacio = document.getElementById('formTipoEspacio');
+    if (formTipoEspacio) {
+        formTipoEspacio.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nombreEl = document.getElementById('nuevoTipoNombre');
+            const iconoEl = document.getElementById('nuevoTipoIcono');
+            const fb = document.getElementById('tiposEspacioFeedback');
+            const nombre = (nombreEl?.value || '').trim();
+            const icono = iconoEl?.value || 'bi-building';
+            if (!nombre) return;
+
+            try {
+                const res = await fetch('api/tipos_espacio.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                    body: JSON.stringify({ operacion: 'crear', nombre, icono, csrf_token: csrfToken })
+                });
+                const d = await res.json();
+                if (d.ok) {
+                    if (nombreEl) nombreEl.value = '';
+                    if (fb) { fb.className = 'alerta alerta-exito'; fb.textContent = d.mensaje; setTimeout(() => { fb.textContent = ''; fb.className = ''; }, 3500); }
+                    await cargarTiposEspacio();
+                    renderizarTablaAulas(listaAulas);
+                    renderizarTableroAulas(listaAulas);
+                } else if (fb) {
+                    fb.className = 'alerta alerta-error';
+                    fb.textContent = d.error || 'No se pudo agregar el tipo';
+                }
+            } catch (err) {
+                alert('Error de conexión con el servidor');
+            }
+        });
+    }
+
+    // Formulario de Horarios Automáticos
+    const formHorario = document.getElementById('formHorario');
+    if (formHorario) {
+        formHorario.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fb = document.getElementById('horarioFormFeedback');
+            const payload = {
+                operacion: 'crear',
+                nombre: (document.getElementById('horarioNombre')?.value || '').trim(),
+                hora: document.getElementById('horarioHora')?.value || '18:30',
+                dias: document.getElementById('horarioDias')?.value || '1,2,3,4,5',
+                accion: document.getElementById('horarioAccion')?.value || 'todo',
+                csrf_token: csrfToken
+            };
+            try {
+                const res = await fetch('api/horarios.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                    body: JSON.stringify(payload)
+                });
+                const d = await res.json();
+                if (d.ok) {
+                    formHorario.reset();
+                    const elHora = document.getElementById('horarioHora');
+                    if (elHora) elHora.value = '18:30';
+                    if (fb) { fb.className = 'alerta alerta-exito'; fb.textContent = d.mensaje; setTimeout(() => { fb.textContent = ''; fb.className = ''; }, 4000); }
+                    cargarHorarios();
+                    cargarLog();
+                } else if (fb) {
+                    fb.className = 'alerta alerta-error';
+                    fb.textContent = d.error || 'No se pudo guardar el horario';
+                }
+            } catch (err) {
+                alert('Error de conexión con el servidor');
+            }
+        });
+    }
+
+    // Filtros y Exportar CSV del Registro de Eventos
+    const filtroLogAulaEl = document.getElementById('filtroLogAula');
+    const filtroLogEventoEl = document.getElementById('filtroLogEvento');
+    const filtroLogTextoEl = document.getElementById('filtroLogTexto');
+    const btnExportarLogCsv = document.getElementById('btnExportarLogCsv');
+    let debounceLogTimer = null;
+
+    if (filtroLogAulaEl) filtroLogAulaEl.addEventListener('change', cargarLog);
+    if (filtroLogEventoEl) filtroLogEventoEl.addEventListener('change', cargarLog);
+    if (filtroLogTextoEl) {
+        filtroLogTextoEl.addEventListener('input', () => {
+            if (debounceLogTimer) clearTimeout(debounceLogTimer);
+            debounceLogTimer = setTimeout(cargarLog, 250);
+        });
+    }
+    if (btnExportarLogCsv) {
+        btnExportarLogCsv.addEventListener('click', () => {
+            const params = construirQueryLog();
+            params.set('export', 'csv');
+            window.location.href = `api/log.php?${params.toString()}`;
+        });
+    }
+
     // Iniciar carga de aulas y polling del estado del aula activa
     cargarAulas().then(() => {
         consultarEstado();
@@ -2505,15 +2948,15 @@
     if (esAdmin) {
         resetFormularioUsuario();
         resetFormularioAula();
+        cargarTiposEspacio();
+        cargarHorarios();
         cargarUsuarios();
-        cargarCodigos();
-        cargarCapturas();
         cargarLog();
 
         setInterval(() => {
             const tabActiva = document.querySelector('.tab-contenido.activo');
             if (tabActiva && tabActiva.id === 'tab-aulas') cargarAulas();
-            if (tabActiva && tabActiva.id === 'tab-capturas') cargarCapturas();
+            if (tabActiva && tabActiva.id === 'tab-horarios') cargarHorarios();
             if (tabActiva && tabActiva.id === 'tab-log') cargarLog();
         }, 6000);
     }

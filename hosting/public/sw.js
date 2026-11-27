@@ -11,7 +11,7 @@
  * Al cambiar algo importante de este archivo, subir VERSION para renovar la cache.
  */
 
-const VERSION = 'v2.0.0';
+const VERSION = 'v2.1.0';
 const CACHE_ESTATICO = `control-aula-estatico-${VERSION}`;
 const CACHE_CDN = `control-aula-cdn-${VERSION}`;
 const PAGINA_OFFLINE = 'offline.html';

@@ -486,11 +486,51 @@ function asegurarColumnasExtendidas($pdo) {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
 
-        // Asegurar columna `tipo` y configuración de hardware en tabla `aulas`
+        // Asegurar columna `tipo` (VARCHAR para permitir tipos personalizados) y configuración de hardware en tabla `aulas`
         $colsAulas = $pdo->query("SHOW COLUMNS FROM `aulas`")->fetchAll(PDO::FETCH_COLUMN);
         if (!in_array('tipo', $colsAulas, true)) {
-            $pdo->exec("ALTER TABLE `aulas` ADD COLUMN `tipo` ENUM('Aula','Laboratorio','Taller','Otro') NOT NULL DEFAULT 'Aula' AFTER `nombre`");
+            $pdo->exec("ALTER TABLE `aulas` ADD COLUMN `tipo` VARCHAR(60) NOT NULL DEFAULT 'Aula' AFTER `nombre`");
+        } else {
+            try {
+                $pdo->exec("ALTER TABLE `aulas` MODIFY COLUMN `tipo` VARCHAR(60) NOT NULL DEFAULT 'Aula'");
+            } catch (Exception $e) {}
         }
+
+        // Tabla de Tipos de Espacio personalizados
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `tipos_espacio` (
+              `id` INT NOT NULL AUTO_INCREMENT,
+              `nombre` VARCHAR(60) NOT NULL,
+              `icono` VARCHAR(50) NOT NULL DEFAULT 'bi-door-open',
+              `creado_en` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_tipo_espacio_nombre` (`nombre`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $pdo->exec("
+            INSERT IGNORE INTO `tipos_espacio` (`nombre`, `icono`) VALUES
+            ('Aula', 'bi-door-open'),
+            ('Laboratorio', 'bi-cpu'),
+            ('Taller', 'bi-tools'),
+            ('SUM', 'bi-people'),
+            ('Biblioteca', 'bi-book'),
+            ('Otro', 'bi-building');
+        ");
+
+        // Tabla de Horarios de Cierre Automático (Ahorro Energético)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `horarios_cierre` (
+              `id` INT NOT NULL AUTO_INCREMENT,
+              `nombre` VARCHAR(100) NOT NULL,
+              `hora` VARCHAR(5) NOT NULL,
+              `dias` VARCHAR(30) NOT NULL DEFAULT '1,2,3,4,5',
+              `accion` VARCHAR(20) NOT NULL DEFAULT 'todo',
+              `activo` TINYINT(1) NOT NULL DEFAULT 1,
+              `ultima_ejecucion` DATE DEFAULT NULL,
+              `creado_en` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
         if (!in_array('marca_aire', $colsAulas, true)) {
             $pdo->exec("ALTER TABLE `aulas` ADD COLUMN `marca_aire` VARCHAR(50) NOT NULL DEFAULT 'Star (OEM)' AFTER `activa`");
         }
@@ -822,4 +862,96 @@ function encolarComandoIRSiExiste($pdo, $dispositivo, $accionPrincipal, $accionF
         'frecuencia_khz' => (int) $codigoInfo['frecuencia_khz'],
         'ac_state'       => $acStateJson ? json_decode($acStateJson, true) : null
     ];
+}
+
+/**
+ * Ejecuta un apagado global de un servicio ('todo', 'luces', 'aire', 'proyector')
+ * sobre todas las aulas activas.
+ */
+function ejecutarAccionApagadoGlobal($pdo, $servicio, $actor = 'sistema', $motivo = '') {
+    $servicio = strtolower(trim((string) $servicio));
+    $stmt = $pdo->query('SELECT id, nombre FROM aulas WHERE activa = 1');
+    $aulasActivas = $stmt ? $stmt->fetchAll() : [];
+    $afectadas = 0;
+
+    foreach ($aulasActivas as $a) {
+        $aid = (int) $a['id'];
+        if ($servicio === 'todo') {
+            apagarTodoAula($pdo, $aid, $actor);
+        } elseif ($servicio === 'luces') {
+            $pdo->prepare('UPDATE aulas SET luces = 0 WHERE id = :id')->execute([':id' => $aid]);
+            try {
+                $pdo->prepare('UPDATE estado_actual SET luces = 0, luces_deseadas = 0 WHERE id = :id')->execute([':id' => $aid]);
+            } catch (Exception $e) {}
+        } elseif ($servicio === 'aire') {
+            $pdo->prepare('UPDATE aulas SET aire_encendido = 0 WHERE id = :id')->execute([':id' => $aid]);
+            try {
+                $pdo->prepare("UPDATE estado_actual SET aire_encendido = 0, ultima_accion_aire = 'apagar' WHERE id = :id")->execute([':id' => $aid]);
+            } catch (Exception $e) {}
+            encolarComandoIRSiExiste($pdo, 'aire', 'apagar', null, $aid);
+        } elseif ($servicio === 'proyector') {
+            $pdo->prepare('UPDATE aulas SET proyector_encendido = 0, proyector_freeze = 0, proyector_mute = 0 WHERE id = :id')->execute([':id' => $aid]);
+            try {
+                $pdo->prepare("UPDATE estado_actual SET proyector_encendido = 0, proyector_freeze = 0, proyector_mute = 0, ultima_accion_proyector = 'apagar' WHERE id = :id")->execute([':id' => $aid]);
+            } catch (Exception $e) {}
+            encolarComandoIRSiExiste($pdo, 'proyector', 'apagar', null, $aid);
+        }
+        $afectadas++;
+    }
+
+    $etiqueta = [
+        'todo' => 'todos los equipos',
+        'luces' => 'todas las luces',
+        'aire' => 'todos los aires acondicionados',
+        'proyector' => 'todos los proyectores'
+    ][$servicio] ?? $servicio;
+
+    $detalle = $motivo !== ''
+        ? "{$motivo}: apagado de {$etiqueta} en {$afectadas} espacios activos"
+        : "Apagado global de {$etiqueta} en {$afectadas} espacios activos por {$actor}";
+
+    registrarEvento($pdo, ($actor === 'sistema' ? 'sistema' : 'panel'), 'APAGADO_GLOBAL', $detalle);
+    return $afectadas;
+}
+
+/**
+ * Revisa si corresponde disparar alguna regla de horarios_cierre (hora local Argentina).
+ * Se ejecuta en cada sincronización del ESP32 o carga del panel, una sola vez por día por regla.
+ */
+function verificarHorariosCierreAutomatico($pdo) {
+    static $yaVerificadoEnRequest = false;
+    if ($yaVerificadoEnRequest) {
+        return;
+    }
+    $yaVerificadoEnRequest = true;
+
+    try {
+        $hoyFecha = date('Y-m-d');
+        $horaActual = date('H:i');
+        $diaSemana = date('N'); // 1 (Lun) a 7 (Dom)
+
+        $stmt = $pdo->prepare(
+            "SELECT * FROM horarios_cierre
+             WHERE activo = 1
+               AND (ultima_ejecucion IS NULL OR ultima_ejecucion < :hoy)
+               AND hora <= :hora"
+        );
+        $stmt->execute([':hoy' => $hoyFecha, ':hora' => $horaActual]);
+        $reglas = $stmt->fetchAll();
+
+        foreach ($reglas as $r) {
+            $diasArr = array_map('trim', explode(',', (string) $r['dias']));
+            if (!in_array($diaSemana, $diasArr, true)) {
+                continue;
+            }
+            // Marcar primero para evitar doble ejecución concurrente
+            $upd = $pdo->prepare('UPDATE horarios_cierre SET ultima_ejecucion = :hoy WHERE id = :id AND (ultima_ejecucion IS NULL OR ultima_ejecucion < :hoy2)');
+            $upd->execute([':hoy' => $hoyFecha, ':id' => (int) $r['id'], ':hoy2' => $hoyFecha]);
+            if ($upd->rowCount() > 0) {
+                ejecutarAccionApagadoGlobal($pdo, $r['accion'], 'sistema', "Cierre automático '{$r['nombre']}' ({$r['hora']})");
+            }
+        }
+    } catch (Exception $e) {
+        // Silencioso para no interrumpir la sincronización del ESP32
+    }
 }

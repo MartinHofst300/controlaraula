@@ -101,7 +101,7 @@ if ($rol === 'aula') {
             } catch (e) {}
         })();
     </script>
-    <link rel="stylesheet" href="assets/css/estilos.css?v=20261126">
+    <link rel="stylesheet" href="assets/css/estilos.css?v=20261126b">
 </head>
 <body class="bg-body-tertiary">
     <div class="container py-3 panel-contenedor">
@@ -389,7 +389,15 @@ if ($rol === 'aula') {
                 <nav class="tabs-navegacion nav nav-tabs mb-3" aria-label="Pestañas de administración">
                     <button type="button" class="tab-btn nav-link activo" data-target="tab-aulas">
                         <i class="bi bi-building"></i>
-                        <span>Gestión de Aulas y Cuentas</span>
+                        <span>Gestión de Aulas</span>
+                    </button>
+                    <button type="button" class="tab-btn nav-link" data-target="tab-horarios">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Horarios Automáticos</span>
+                    </button>
+                    <button type="button" class="tab-btn nav-link" data-target="tab-usuarios">
+                        <i class="bi bi-person-badge"></i>
+                        <span>Administradores</span>
                     </button>
                     <button type="button" class="tab-btn nav-link" data-target="tab-log">
                         <i class="bi bi-journal-text"></i>
@@ -397,27 +405,129 @@ if ($rol === 'aula') {
                     </button>
                 </nav>
 
-                <!-- Pestaña 0: Tablero y Gestión de Aulas (Multi-Aula) -->
+                <!-- Pestaña 0: Tablero, KPIs, Tipos de Espacio y Catálogo de Aulas -->
                 <div id="tab-aulas" class="tab-contenido activo">
-                    <!-- Tablero Multi-Aula en Vivo -->
+                    <!-- 1. Resumen Rápido del Colegio (KPIs) -->
+                    <div class="kpi-grid mb-3" id="kpiResumenColegio">
+                        <div class="kpi-card card shadow-sm" data-kpi-filtro="online" role="button" title="Filtrar espacios online">
+                            <div class="kpi-icono kpi-verde"><i class="bi bi-wifi"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Espacios Online</span>
+                                <strong class="kpi-valor" id="kpiOnline">0 / 0</strong>
+                            </div>
+                        </div>
+                        <div class="kpi-card card shadow-sm" data-kpi-filtro="encendidos" role="button" title="Filtrar espacios con luces encendidas">
+                            <div class="kpi-icono kpi-amarillo"><i class="bi bi-lightbulb-fill"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Luces Encendidas</span>
+                                <strong class="kpi-valor" id="kpiLuces">0</strong>
+                            </div>
+                        </div>
+                        <div class="kpi-card card shadow-sm" data-kpi-filtro="encendidos" role="button" title="Filtrar espacios con aire encendido">
+                            <div class="kpi-icono kpi-celeste"><i class="bi bi-wind"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Aires Encendidos</span>
+                                <strong class="kpi-valor" id="kpiAires">0</strong>
+                            </div>
+                        </div>
+                        <div class="kpi-card card shadow-sm" data-kpi-filtro="encendidos" role="button" title="Filtrar espacios con proyector encendido">
+                            <div class="kpi-icono kpi-azul"><i class="bi bi-projector-fill"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Proyectores Activos</span>
+                                <strong class="kpi-valor" id="kpiProyectores">0</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Tablero Multi-Aula en Vivo + Apagado Selectivo + Filtros -->
                     <div class="tarjeta-seccion card shadow-sm">
                         <div class="seccion-encabezado d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div>
                                 <h3 class="h6 fw-bold mb-1">Tablero Central Multi-Aula en Tiempo Real</h3>
-                                <p class="text-body-secondary small mb-0">Monitoreo y control simultáneo de todas las aulas de la institución escolar.</p>
+                                <p class="text-body-secondary small mb-0">Monitoreo y control simultáneo de todos los espacios de la institución.</p>
                             </div>
-                            <button type="button" id="btnApagarTodasAulas" class="btn btn-danger btn-sm btn-peligro btn-pequeno" title="Apagado general de emergencia en todas las aulas">
-                                <i class="bi bi-exclamation-octagon"></i>
-                                <span>Apagar Todas las Aulas</span>
-                            </button>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-outline-warning btn-sm fw-medium btn-apagar-servicio" data-servicio="luces" title="Apagar luces en todas las aulas activas">
+                                    <i class="bi bi-lightbulb-off"></i>
+                                    <span>Apagar Luces</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm fw-medium btn-apagar-servicio" data-servicio="aire" title="Apagar aires acondicionados en todas las aulas activas">
+                                    <i class="bi bi-wind"></i>
+                                    <span>Apagar Aires</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm fw-medium btn-apagar-servicio" data-servicio="proyector" title="Apagar proyectores en todas las aulas activas">
+                                    <i class="bi bi-projector"></i>
+                                    <span>Apagar Proyectores</span>
+                                </button>
+                                <button type="button" id="btnApagarTodasAulas" class="btn btn-danger btn-sm btn-peligro fw-semibold" title="Apagado general de emergencia en todas las aulas">
+                                    <i class="bi bi-power"></i>
+                                    <span>Apagar Todo</span>
+                                </button>
+                            </div>
                         </div>
+
+                        <!-- Barra de Filtros Rápidos del Tablero -->
+                        <div class="filtros-barra d-flex flex-wrap align-items-center gap-2 mt-2 mb-2">
+                            <div class="input-group input-group-sm" style="max-width: 240px;">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" id="filtroTableroTexto" class="form-control" placeholder="Buscar espacio...">
+                            </div>
+                            <select id="filtroTableroTipo" class="form-select form-select-sm" style="width: auto; min-width: 165px;">
+                                <option value="">Todos los tipos</option>
+                            </select>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Filtro por estado">
+                                <button type="button" class="btn btn-outline-secondary active" data-filtro-estado="todos">Todos</button>
+                                <button type="button" class="btn btn-outline-secondary" data-filtro-estado="encendidos">Con equipos ON</button>
+                                <button type="button" class="btn btn-outline-secondary" data-filtro-estado="online">Solo Online</button>
+                            </div>
+                        </div>
+
                         <div id="tableroAulasFeedback" class="mb-2"></div>
-                        <div id="tableroAulasGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-top:14px;">
+                        <div id="tableroAulasGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-top:12px;">
                             <div class="text-center py-3 text-body-secondary" style="grid-column:1/-1;">Cargando estado de las aulas...</div>
                         </div>
                     </div>
 
-                    <!-- Tabla de Catálogo y Administración de Espacios Físicos -->
+                    <!-- 3. Gestión de Tipos de Espacio Personalizados -->
+                    <div class="tarjeta-seccion card shadow-sm mt-3">
+                        <div class="seccion-encabezado mb-2">
+                            <div>
+                                <h3 class="h6 fw-bold mb-1">Tipos de Espacio</h3>
+                                <p class="text-body-secondary small mb-0">Creá nuevas categorías (ej. SUM, Biblioteca, Dirección, Preceptoría) para clasificar los salones.</p>
+                            </div>
+                        </div>
+                        <div id="tiposEspacioFeedback"></div>
+                        <div id="listaTiposEspacio" class="d-flex flex-wrap gap-2 mb-3">
+                            <span class="text-body-secondary small">Cargando tipos...</span>
+                        </div>
+                        <form id="formTipoEspacio" class="d-flex flex-wrap align-items-end gap-2 pt-2 border-top">
+                            <div class="campo-grupo flex-grow-1" style="min-width: 200px;">
+                                <label for="nuevoTipoNombre" class="form-label">Nuevo Tipo de Espacio</label>
+                                <input type="text" class="form-control form-control-sm" id="nuevoTipoNombre" placeholder="ej. Dirección, Sala de Profesores, SUM..." required maxlength="60">
+                            </div>
+                            <div class="campo-grupo" style="min-width: 170px;">
+                                <label for="nuevoTipoIcono" class="form-label">Ícono</label>
+                                <select id="nuevoTipoIcono" class="form-select form-select-sm">
+                                    <option value="bi-door-open">Puerta / Aula</option>
+                                    <option value="bi-cpu">Tecnología / Laboratorio</option>
+                                    <option value="bi-tools">Herramientas / Taller</option>
+                                    <option value="bi-people">Personas / SUM</option>
+                                    <option value="bi-book">Libros / Biblioteca</option>
+                                    <option value="bi-building">Edificio / Sector</option>
+                                    <option value="bi-briefcase">Oficina / Dirección</option>
+                                    <option value="bi-pc-display">Informática / Sala PC</option>
+                                    <option value="bi-easel2">Salón de Actos</option>
+                                    <option value="bi-mortarboard">Académico</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm px-3 fw-medium">
+                                <i class="bi bi-plus-circle"></i>
+                                <span>Agregar Tipo</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- 4. Tabla de Catálogo y Administración de Espacios Físicos -->
                     <div class="tarjeta-seccion card shadow-sm mt-3">
                         <div class="seccion-encabezado">
                             <div>
@@ -456,10 +566,9 @@ if ($rol === 'aula') {
                                     <div class="campo-grupo">
                                         <label for="aulaTipo" class="form-label">Tipo de Espacio</label>
                                         <select id="aulaTipo" class="form-select" required>
-                                            <option value="Aula">Aula Estándar</option>
+                                            <option value="Aula">Aula</option>
                                             <option value="Laboratorio">Laboratorio</option>
                                             <option value="Taller">Taller</option>
-                                            <option value="Otro">Auditorio / Otro</option>
                                         </select>
                                     </div>
                                     <div class="campo-grupo">
@@ -479,71 +588,129 @@ if ($rol === 'aula') {
                     </div>
                 </div>
 
-                <!-- Pestaña 1: Gestión de Cuentas (Aulas y Administradores) -->
-                <div id="tab-usuarios" class="tab-contenido">
+                <!-- Pestaña 1: Horarios de Cierre Automático (Ahorro Energético) -->
+                <div id="tab-horarios" class="tab-contenido">
                     <div class="tarjeta-seccion card shadow-sm">
-                        <div class="seccion-encabezado">
+                        <div class="seccion-encabezado d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div>
-                                <h3 class="h6 fw-bold mb-1">Gestión de Cuentas del Sistema</h3>
-                                <p class="text-body-secondary small mb-0">Administre las cuentas de las aulas/espacios y administradores del sistema.</p>
+                                <h3 class="h6 fw-bold mb-1">Horarios de Cierre Automático (Ahorro Energético)</h3>
+                                <p class="text-body-secondary small mb-0">Programá el apagado automático al finalizar cada turno para evitar consumos innecesarios.</p>
                             </div>
+                            <span class="badge text-bg-secondary px-3 py-2" id="horaServidorBadge">
+                                <i class="bi bi-clock me-1"></i>Hora servidor: --:--
+                            </span>
                         </div>
-
-                        <div class="tabla-contenedor table-responsive">
-                            <table class="table table-striped table-hover align-middle mb-0">
-                                <thead class="table-light">
+                        <div id="horarioFormFeedback"></div>
+                        <div class="tabla-contenedor table-responsive border rounded-3">
+                            <table class="table table-hover align-middle mb-0 tabla-espacios">
+                                <thead class="tabla-encabezado">
                                     <tr>
-                                        <th>Usuario</th>
-                                        <th>Nombre / Espacio</th>
-                                        <th>Rol</th>
+                                        <th>Regla</th>
+                                        <th>Hora</th>
+                                        <th>Días</th>
+                                        <th>Acción</th>
                                         <th>Estado</th>
-                                        <th>Aulas Asignadas</th>
-                                        <th>Acciones</th>
+                                        <th class="text-end">Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tablaUsuariosBody">
-                                    <tr><td colspan="6" class="text-center py-3">Cargando cuentas...</td></tr>
+                                <tbody id="tablaHorariosBody">
+                                    <tr><td colspan="6" class="text-center py-4 text-body-secondary">Cargando horarios automáticos...</td></tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <!-- Formulario de Alta y Edición de Usuarios -->
                         <div class="mt-4 pt-3 border-top">
-                            <h4 id="tituloFormUsuario" class="h6 fw-bold text-secondary mb-3">Dar de alta nueva cuenta (Aula o Administrador)</h4>
+                            <h4 class="h6 fw-bold text-secondary mb-3">Programar nuevo horario de apagado</h4>
+                            <form id="formHorario">
+                                <div class="formulario-grilla">
+                                    <div class="campo-grupo">
+                                        <label for="horarioNombre" class="form-label">Nombre de la Regla</label>
+                                        <input type="text" class="form-control" id="horarioNombre" placeholder="ej. Cierre Turno Tarde" required maxlength="100">
+                                    </div>
+                                    <div class="campo-grupo">
+                                        <label for="horarioHora" class="form-label">Hora de Ejecución</label>
+                                        <input type="time" class="form-control" id="horarioHora" value="18:30" required>
+                                    </div>
+                                    <div class="campo-grupo">
+                                        <label for="horarioDias" class="form-label">Días de la Semana</label>
+                                        <select id="horarioDias" class="form-select">
+                                            <option value="1,2,3,4,5" selected>Lunes a Viernes</option>
+                                            <option value="1,2,3,4,5,6">Lunes a Sábado</option>
+                                            <option value="1,2,3,4,5,6,7">Todos los días</option>
+                                        </select>
+                                    </div>
+                                    <div class="campo-grupo">
+                                        <label for="horarioAccion" class="form-label">Qué Apagar</label>
+                                        <select id="horarioAccion" class="form-select">
+                                            <option value="todo" selected>Todo (Luces, Aire y Proyector)</option>
+                                            <option value="luces">Solo Luces</option>
+                                            <option value="aire">Solo Aires Acondicionados</option>
+                                            <option value="proyector">Solo Proyectores</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 mt-2">
+                                    <button type="submit" class="btn btn-primary btn-primario">
+                                        <i class="bi bi-clock-fill"></i>
+                                        <span>Guardar Horario</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña 2: Gestión de Administradores / Directivos -->
+                <div id="tab-usuarios" class="tab-contenido">
+                    <div class="tarjeta-seccion card shadow-sm">
+                        <div class="seccion-encabezado">
+                            <div>
+                                <h3 class="h6 fw-bold mb-1">Administradores y Directivos</h3>
+                                <p class="text-body-secondary small mb-0">Creá cuentas con acceso administrativo completo para directivos, regentes o preceptores.</p>
+                            </div>
+                        </div>
+
+                        <div class="tabla-contenedor table-responsive border rounded-3">
+                            <table class="table table-hover align-middle mb-0 tabla-espacios">
+                                <thead class="tabla-encabezado">
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Nombre Completo</th>
+                                        <th>Estado</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaUsuariosBody">
+                                    <tr><td colspan="4" class="text-center py-4 text-body-secondary">Cargando administradores...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Formulario de Alta y Edición de Administradores -->
+                        <div class="mt-4 pt-3 border-top">
+                            <h4 id="tituloFormUsuario" class="h6 fw-bold text-secondary mb-3">Dar de alta nuevo administrador</h4>
                             <div id="usuarioFormFeedback"></div>
                             <form id="formUsuario">
                                 <input type="hidden" id="usrId" value="0">
+                                <input type="hidden" id="usrRol" value="admin">
                                 <div class="formulario-grilla">
                                     <div class="campo-grupo">
-                                        <label for="usrUsuario" class="form-label">Nombre de Usuario (login)</label>
-                                        <input type="text" class="form-control" id="usrUsuario" placeholder="ej. aula102" required pattern="[a-zA-Z0-9_.\-]{3,50}">
+                                        <label for="usrUsuario" class="form-label">Usuario (login)</label>
+                                        <input type="text" class="form-control" id="usrUsuario" placeholder="ej. direccion, regente" required pattern="[a-zA-Z0-9_.\-]{3,50}">
                                     </div>
-                                    <div class="campo-grupo">
-                                        <label for="usrNombre" class="form-label">Nombre del Espacio / Administrador</label>
-                                        <input type="text" class="form-control" id="usrNombre" placeholder="ej. Aula 102 - General" required>
-                                    </div>
-                                    <div class="campo-grupo">
-                                        <label for="usrRol" class="form-label">Rol de Acceso</label>
-                                        <select id="usrRol" class="form-select" required>
-                                            <option value="aula">Cuenta de Aula / Espacio (Solo su salón)</option>
-                                            <option value="admin">Administrador (Acceso total)</option>
-                                        </select>
+                                    <div class="campo-grupo col-span-2">
+                                        <label for="usrNombre" class="form-label">Nombre Completo / Cargo</label>
+                                        <input type="text" class="form-control" id="usrNombre" placeholder="ej. Dirección - Prof. Gómez" required>
                                     </div>
                                     <div class="campo-grupo">
                                         <label for="usrPassword" id="labelUsrPassword" class="form-label">Contraseña</label>
                                         <input type="password" class="form-control" id="usrPassword" placeholder="Mínimo 4 caracteres">
                                     </div>
-                                    <div class="campo-grupo col-span-4 p-3 rounded border bg-body-tertiary" id="contenedorGrupoAulas">
-                                        <label class="form-label fw-bold text-primary mb-2">Espacio Asignado</label>
-                                        <div id="checkAulasUsuarioContainer" class="d-flex flex-wrap gap-3 small">
-                                            <!-- Checkboxes de aulas generados dinámicamente -->
-                                        </div>
-                                    </div>
                                 </div>
                                 <div class="d-flex gap-2 mt-2">
                                     <button type="submit" class="btn btn-primary btn-primario">
                                         <i class="bi bi-person-check"></i>
-                                        <span id="textoBtnGuardarUsuario">Guardar Usuario</span>
+                                        <span id="textoBtnGuardarUsuario">Crear Administrador</span>
                                     </button>
                                     <button type="button" id="btnLimpiarFormUsuario" class="btn btn-outline-secondary btn-secundario">Cancelar / Limpiar</button>
                                 </div>
@@ -552,25 +719,53 @@ if ($rol === 'aula') {
                     </div>
                 </div>
 
-                <!-- Pestaña 2: Registro de Eventos -->
+                <!-- Pestaña 3: Registro de Eventos con Filtros y Exportar CSV -->
                 <div id="tab-log" class="tab-contenido">
                     <div class="tarjeta-seccion card shadow-sm">
-                        <div class="seccion-encabezado">
-                            <h3 class="h6 fw-bold mb-0">Auditoría de Eventos del Sistema</h3>
+                        <div class="seccion-encabezado d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h3 class="h6 fw-bold mb-1">Registro de Eventos del Sistema</h3>
+                                <p class="text-body-secondary small mb-0">Historial completo de encendidos, apagados, inicios de sesión y cierres automáticos.</p>
+                            </div>
+                            <button type="button" id="btnExportarLogCsv" class="btn btn-outline-success btn-sm px-3 fw-medium">
+                                <i class="bi bi-file-earmark-spreadsheet"></i>
+                                <span>Exportar Excel (CSV)</span>
+                            </button>
                         </div>
+
+                        <!-- Barra de Filtros del Registro de Eventos -->
+                        <div class="filtros-barra d-flex flex-wrap align-items-center gap-2 mb-3">
+                            <select id="filtroLogAula" class="form-select form-select-sm" style="width: auto; min-width: 170px;">
+                                <option value="">Todos los espacios</option>
+                            </select>
+                            <select id="filtroLogEvento" class="form-select form-select-sm" style="width: auto; min-width: 170px;">
+                                <option value="">Todos los eventos</option>
+                                <option value="LUCES">Luces</option>
+                                <option value="AIRE">Aire Acondicionado</option>
+                                <option value="PROYECTOR">Proyector</option>
+                                <option value="ESCENA">Escenas Rápidas</option>
+                                <option value="APAGADO_GLOBAL">Apagado Global / Horarios</option>
+                                <option value="SESION">Inicios / Cierres de Sesión</option>
+                            </select>
+                            <div class="input-group input-group-sm" style="max-width: 240px;">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" id="filtroLogTexto" class="form-control" placeholder="Buscar en detalle...">
+                            </div>
+                        </div>
+
                         <div class="tabla-contenedor table-responsive border rounded-3">
                             <table class="table table-hover align-middle mb-0 tabla-espacios">
                                 <thead class="tabla-encabezado">
                                     <tr>
                                         <th>Hora</th>
-                                        <th>Aula</th>
+                                        <th>Espacio</th>
                                         <th>Origen</th>
                                         <th>Evento</th>
                                         <th>Detalle</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablaLogBody">
-                                    <tr><td colspan="5" class="text-center py-3">Cargando eventos...</td></tr>
+                                    <tr><td colspan="5" class="text-center py-4 text-body-secondary">Cargando eventos...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -835,7 +1030,7 @@ if ($rol === 'aula') {
 
     <!-- Bootstrap 5.3 Bundle JS & Script Principal del Panel -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script src="assets/js/panel.js?v=20261126"></script>
-    <script src="assets/js/pwa.js?v=20261126"></script>
+    <script src="assets/js/panel.js?v=20261126b"></script>
+    <script src="assets/js/pwa.js?v=20261126b"></script>
 </body>
 </html>

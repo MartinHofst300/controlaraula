@@ -14,6 +14,7 @@ habilitarCORS();
 $auth = autenticarPanelOApp();
 $pdo = obtenerConexionDB();
 asegurarColumnasExtendidas($pdo);
+verificarHorariosCierreAutomatico($pdo);
 
 $esAdmin = ($auth['rol'] === 'admin');
 $usuarioId = (int) ($auth['usuario_id'] ?? 0);
@@ -163,10 +164,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Las siguientes operaciones son EXCLUSIVAS de Administradores
     requerirRolAdmin($auth);
 
+    // 1B. APAGADO SELECTIVO GLOBAL POR SERVICIO (luces, aire, proyector)
+    if ($operacion === 'apagar_servicio') {
+        $servicio = strtolower(trim($datos['servicio'] ?? ''));
+        if (!in_array($servicio, ['luces', 'aire', 'proyector', 'todo'], true)) {
+            responderJSON(['ok' => false, 'error' => 'Servicio inválido (luces, aire, proyector o todo)'], 422);
+        }
+        $afectadas = ejecutarAccionApagadoGlobal($pdo, $servicio, $auth['usuario']);
+        $nombres = ['luces' => 'todas las luces', 'aire' => 'todos los aires', 'proyector' => 'todos los proyectores', 'todo' => 'todos los equipos'];
+        responderJSON([
+            'ok' => true,
+            'mensaje' => "Se apagaron {$nombres[$servicio]} en {$afectadas} espacios activos",
+            'aulas_afectadas' => $afectadas
+        ]);
+    }
+
     // 2. CREAR NUEVO ESPACIO FÍSICO / AULA CON SU CUENTA Y COPIA AUTOMÁTICA DE PROTOCOLOS
     if ($operacion === 'crear') {
         $nombre = trim($datos['nombre'] ?? '');
-        $tipo = in_array($datos['tipo'] ?? '', ['Aula', 'Laboratorio', 'Taller', 'Otro'], true) ? $datos['tipo'] : 'Aula';
+        $tipoRaw = trim($datos['tipo'] ?? 'Aula');
+        $tipo = (mb_strlen($tipoRaw) >= 2 && mb_strlen($tipoRaw) <= 60) ? $tipoRaw : 'Aula';
         $ubicacion = '';
         $password = trim($datos['password'] ?? '');
 
@@ -304,7 +321,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $nombre = trim($datos['nombre'] ?? '');
-        $tipo = in_array($datos['tipo'] ?? '', ['Aula', 'Laboratorio', 'Taller', 'Otro'], true) ? $datos['tipo'] : 'Aula';
+        $tipoRaw = trim($datos['tipo'] ?? 'Aula');
+        $tipo = (mb_strlen($tipoRaw) >= 2 && mb_strlen($tipoRaw) <= 60) ? $tipoRaw : 'Aula';
         $usuarioLogin = $nombre;
         $password = trim($datos['password'] ?? '');
 

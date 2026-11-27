@@ -821,6 +821,104 @@ html[data-theme="oscuro"] .hw-chip-epson {
     font-size: 14px;
 }
 
+/* Tarjetas KPI Resumen del Colegio */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+@media (min-width: 768px) {
+    .kpi-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.kpi-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.kpi-card:hover {
+    border-color: var(--color-primary);
+}
+
+.kpi-icono {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.kpi-verde { background-color: rgba(25, 135, 84, 0.15); color: #198754; }
+.kpi-amarillo { background-color: rgba(255, 193, 7, 0.18); color: #d97706; }
+.kpi-celeste { background-color: rgba(13, 202, 240, 0.15); color: #0aa2c0; }
+.kpi-azul { background-color: rgba(13, 110, 253, 0.15); color: #0d6efd; }
+
+html[data-theme="oscuro"] .kpi-verde { color: #75b798; }
+html[data-theme="oscuro"] .kpi-amarillo { color: #ffc107; }
+html[data-theme="oscuro"] .kpi-celeste { color: #6edff6; }
+html[data-theme="oscuro"] .kpi-azul { color: #6ea8fe; }
+
+.kpi-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.kpi-label {
+    font-size: calc(11.5px * var(--ui-scale));
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.kpi-valor {
+    font-size: calc(20px * var(--ui-scale));
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text-primary);
+}
+
+/* Chips de Tipos de Espacio personalizados */
+.tipo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: var(--radius-full);
+    background-color: var(--bg-subtle);
+    border: 1px solid var(--border-subtle);
+    font-size: calc(12.5px * var(--ui-scale));
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.tipo-chip-del {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0 2px;
+    line-height: 1;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.tipo-chip-del:hover {
+    color: var(--color-danger);
+}
+
 .formulario-grilla {
     display: grid;
     grid-template-columns: 1fr;

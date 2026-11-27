@@ -24,6 +24,8 @@ ServerSignature Off
     RewriteRule ^api/capturas/?$ api/capturas.php [L,QSA]
     RewriteRule ^api/usuarios/?$ api/usuarios.php [L,QSA]
     RewriteRule ^api/aulas/?$ api/aulas.php [L,QSA]
+    RewriteRule ^api/tipos_espacio/?$ api/tipos_espacio.php [L,QSA]
+    RewriteRule ^api/horarios/?$ api/horarios.php [L,QSA]
     RewriteRule ^api/escenas/?$ api/escenas.php [L,QSA]
     RewriteRule ^api/preferencias/?$ api/preferencias.php [L,QSA]
     RewriteRule ^api/perfil/?$ api/perfil.php [L,QSA]

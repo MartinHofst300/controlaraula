@@ -26,6 +26,7 @@ if ($metodo !== 'GET' && $metodo !== 'POST') {
 
 $pdo = obtenerConexionDB();
 asegurarColumnasExtendidas($pdo);
+verificarHorariosCierreAutomatico($pdo);
 
 // Autenticar la solicitud del ESP32 identificando su aula asignada
 $aula = autenticarESP32($pdo);
